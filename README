@@ -64,12 +64,12 @@ route types
 ----------------------------------------
 type		 HTTP			  SQL
 -----		 ----			  ---		   
-create		 POST			  INSERT
-read		 GET			  SELECT
-update		 PUT			  UPDATE
-delete		 DELETE			  DELETE
-transaction	 POST PUT DELETE  TRANSACTION
-service		 *				  null
+create       POST             INSERT
+read         GET              SELECT
+update       PUT              UPDATE
+delete       DELETE           DELETE
+transaction  POST PUT DELETE  TRANSACTION
+service      *                null
 
 service route type is proxied to service URL
 
