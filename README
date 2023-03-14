@@ -200,6 +200,10 @@ join app_user using(app_user_id)
 where $1=email_address
 
 api/insert/object.sql
+-- note the returning clause
+-- returns fields corresponding to the associated select query
+-- server maps the result to the select query params
+-- the associated select query result becomes response body
 with r as (
 	select *
 	from json_to_recordset($2) as x(
