@@ -5,7 +5,7 @@ haiku
 ----------------------------------------
 a deliverance -
 this app server for postgres
-without ORM!
+without ORM
 
 dependencies
 ----------------------------------------
