@@ -3,8 +3,8 @@ servotron
 
 haiku
 ----------------------------------------
-the heresy is
-an app server for postgres ...
+this is heresy -
+an app server for postgres
 without ORM!
 
 dependencies
