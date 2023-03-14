@@ -365,7 +365,7 @@ func WrapQuery(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request) {
 			return
 		}
 		log.Println("processing", r.Method, routeName, params)
-		result, err := ExecQuery(pool, r.Method, routeName, params)
+		result, n, err := ExecQuery(pool, r.Method, routeName, params)
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -375,38 +375,45 @@ func WrapQuery(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request) {
 			return
 		}
 		if len(result) == 0 {
-			w.WriteHeader(http.StatusNotFound)
-			result = []byte("[]")
+			if n > 0 {
+				// a json_agg result
+				result = []byte("[]")
+			} else {
+				// a row_to_json result
+				w.WriteHeader(http.StatusNotFound)
+			}
 		}
 		w.Write(result)
 	}
 }
 
-func ExecQuery(pool *pgxpool.Pool, method string, routeName string, params []interface{}) ([]byte, error) {
+func ExecQuery(pool *pgxpool.Pool, method string, routeName string, params []interface{}) ([]byte, int64, error) {
 	var result []byte
+	var n int64
 	pathTmpl := ""
 	switch method {
 	case http.MethodGet:
 		pathTmpl = "%s/select/%s.sql"
 	default:
-		return result, errors.New("invalid http method for query execution")
+		return result, n, errors.New("invalid http method for query execution")
 	}
 	path := fmt.Sprintf(pathTmpl, CONFIG.SQLRoot, routeName)
 	path = filepath.Clean(path)
 	q, err := os.ReadFile(path)
 	if err != nil {
-		return result, err
+		return result, n, err
 	}
 	log.Println("executing", path, params)
 	rows, err := pool.Query(context.Background(), string(q), params...)
 	defer rows.Close()
 	if err != nil {
-		return result, err
+		return result, n, err
 	}
 	for rows.Next() {
 		result = rows.RawValues()[0]
 	}
-	return result, err
+	n = rows.CommandTag().RowsAffected()
+	return result, n, err
 }
 
 func WrapExec(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request) {
@@ -463,9 +470,9 @@ func WrapExec(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request) {
 			val := rows.RawValues()[0]
 			returning = append(returning, val)
 		}
-		rowsAffected := rows.CommandTag().RowsAffected()
-		log.Println("rows affected:", rowsAffected)
-		if rowsAffected == 0 {
+		n := rows.CommandTag().RowsAffected()
+		log.Println("rows affected:", n)
+		if n == 0 {
 			if r.Method == http.MethodPost {
 				w.WriteHeader(http.StatusInternalServerError)
 			} else {
@@ -543,7 +550,7 @@ func WrapExec(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request) {
 			}
 			log.Println("params", params)
 			log.Println("returning", r.Method, routeName, params)
-			result, err := ExecQuery(pool, "GET", routeName, params)
+			result, _, err := ExecQuery(pool, "GET", routeName, params)
 			if err != nil {
 				log.Println(err)
 				w.WriteHeader(http.StatusInternalServerError)
