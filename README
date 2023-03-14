@@ -1,0 +1,218 @@
+servotron
+========================================
+
+haiku
+----------------------------------------
+an app server for
+linux and postgresql
+without ORM
+
+dependencies
+----------------------------------------
+go
+
+install
+----------------------------------------
+git clone
+go build
+go install
+
+configure
+----------------------------------------
+{
+	"SQLRoot":"/path/to/api/queries/root/dir",
+	"FileServers":{
+		"/assets":"/path/to/static/content/www/assets",
+		"/lib":""/path/to/static/content/www/lib"
+	},
+	"TemplateServers":{
+		"/":"/path/to/go/templates"
+	},
+	"ListenPort":"80"
+	"ManagementPort":"9000",
+	"DBConnString":"postgresql://postgres@localhost:5432/postgres",
+	"DBPoolSize":4,
+	"DBNotifyChannels":["public_default"],
+	"AppUserCookieName":"EmailAddress",
+	"Debug":true
+}
+
+file servers
+----------------------------------------
+static content such as HTML
+
+template servers
+----------------------------------------
+templates written in the go text/template style
+useful for server side includes
+useful for altering content based on user roles/permissions
+depends on an app_user/self endpoint
+server passes app_user/self query output to template
+
+TODO example
+
+run
+----------------------------------------
+servotron --config file.json
+
+load routes
+----------------------------------------
+HTTP POST to /routes on mgmt port
+ex. curl host:9000/routes -d @routes.json
+
+route types
+----------------------------------------
+type         HTTP             SQL
+-----        ----             ---          
+create       POST             INSERT
+read         GET              SELECT
+update       PUT              UPDATE
+delete       DELETE           DELETE
+transaction  POST PUT DELETE  TRANSACTION
+service      *                null
+
+service route type is proxied to service URL
+
+example
+----------------------------------------
+routes.json
+[
+    {
+        "Name": "object",
+        "Type": "read",
+        "URLScheme": "/api/object/{object_id}"
+    },
+    {
+        "Name": "object",
+        "Type": "create",
+        "URLScheme": "/api/object"
+    },
+    {
+        "Name": "object",
+        "Type": "update",
+        "URLScheme": "/api/object/{object_id}"
+    },
+    {
+        "Name": "object",
+        "Type": "delete",
+        "URLScheme": "/api/object/{object_id}"
+    },
+	{
+		"Name": "objects",
+		"Type": "read",
+		"URLScheme": "/api/bucket/{bucket_id}/objects",
+		"QueryParams": [
+			"active":"{active}",
+			"limit","{limit}",
+			"offset","{offset"}
+		]
+	}
+]
+
+schema/public.sql
+-- define some tables for the toy example
+create table if not exists app_user (
+	app_user_id serial primary key,
+	email_address varchar,
+	active boolean
+);
+create table if not exists bucket (
+	bucket_id serial primary key,
+	description varchar,
+	active boolean
+);
+create table if not exists bucket_map_app_user (
+	bucket_id int references bucket.bucket_id,
+	app_user_id int references app_user.app_user_id 
+);
+create table if not exists object (
+	object_id serial primary key,
+	bucket_id int references bucket.bucket_id,
+	description varchar,
+	active boolean default true
+);
+
+api/auth/select/objects.sql
+-- if authorized return true else return false
+-- AppUserCookieName is always first arg
+-- URL route args are passed next
+-- finally query string args are passed as specified in routes
+select count(*)>0
+from bucket_map_app_user
+join app_user using(app_user_id)
+where $1=email_address
+	and bucket_id=$2::int
+
+api/select/objects.sql
+-- if auth query succeeds, the query proceeds
+-- as with auth query, AppUserCookieName is always first arg
+-- URL route args are passed next
+-- finally query string args are passed as specified in routes
+-- multi row requests should return json array via json_agg
+select json_agg(r)
+from (
+	select *
+	from object
+	-- each param must be used and since auth was already performed
+	-- the AppUserCookieName (first) arg can be suppressed
+	-- hence, $1=$1
+	where $1=$1
+		bucket=$2
+		and ($3::boolean is null or active=$3)
+	limit $4
+	offset $5
+) as r
+
+api/auth/select/object.sql
+-- perform auth as perviously noted
+select count(*)>0
+from object
+join bucket_map_app_user using(bucket_id)
+join app_user using(app_user_id)
+where $1=email_address
+	and object_id=$2::int
+
+api/select/object.sql
+-- atomic requests should return json object via row_to_json
+select row_to_json(r)
+from (
+	select *
+	from object
+	join bucket_map_app_user using(bucket_id)
+	join auth using(bucket_id, app_user_id)
+	where $1=email_address
+		bucket=$2
+) as r
+
+api/auth/insert/object.sql
+-- convert incoming json to recordset
+with r as (
+	select *
+	from json_to_recordset($2) as x(
+		bucket_id int,
+		description varchar
+	)
+)
+select count(*)>0
+from r
+join bucket_map_app_user using(bucket_id)
+join app_user using(app_user_id)
+where $1=email_address
+
+api/insert/object.sql
+with r as (
+	select *
+	from json_to_recordset($2) as x(
+		bucket_id int,
+		description varchar
+	)
+)
+insert into object(bucket_id, description)
+select *
+from r
+where $1=$1
+returning row_to_json(object.*)
+
+TODO more api examples
+TODO update
+TODO delete 
