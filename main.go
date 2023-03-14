@@ -465,7 +465,6 @@ func WrapExec(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request) {
 			}
 			return
 		}
-		var returning [][]byte
 		usernameCookie, err := r.Cookie(CONFIG.AppUserCookieName)
 		if err != nil {
 			log.Println(err)
