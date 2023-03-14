@@ -62,8 +62,8 @@ ex. curl host:9000/routes -d @routes.json
 
 route types
 ----------------------------------------
-type		 HTTP			  SQL
------		 ----			  ---		   
+type         HTTP             SQL
+-----        ----             ---          
 create       POST             INSERT
 read         GET              SELECT
 update       PUT              UPDATE
