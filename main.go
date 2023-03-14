@@ -466,25 +466,6 @@ func WrapExec(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request) {
 			return
 		}
 		var returning [][]byte
-		for rows.Next() {
-			val := rows.RawValues()[0]
-			returning = append(returning, val)
-		}
-		n := rows.CommandTag().RowsAffected()
-		log.Println("rows affected:", n)
-		if n == 0 {
-			if r.Method == http.MethodPost {
-				w.WriteHeader(http.StatusInternalServerError)
-			} else {
-				w.WriteHeader(http.StatusNotFound)
-			}
-			return
-		} else {
-			if r.Method == http.MethodDelete {
-				w.WriteHeader(http.StatusNoContent)
-				return
-			}
-		}
 		usernameCookie, err := r.Cookie(CONFIG.AppUserCookieName)
 		if err != nil {
 			log.Println(err)
@@ -511,12 +492,15 @@ func WrapExec(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request) {
 		params = params[:0]
 		var returnMap map[string]interface{}
 		var rawResult []json.RawMessage
-		for _, vars := range returning {
+		// NOTE rows.RawValues are only valid until next call to Next
+		for rows.Next() {
+			vars := rows.RawValues()[0]
 			params = params[:0]
 			params = append(params, usernameCookie.Value)
 			err = json.Unmarshal(vars, &returnMap)
 			if err != nil {
 				log.Println(err)
+				w.WriteHeader(http.StatusInternalServerError)
 				if CONFIG.Debug {
 					w.Write(FormatErr(err.Error()))
 				}
@@ -562,6 +546,22 @@ func WrapExec(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request) {
 			c := make([]byte, len(result))
 			copy(c, result)
 			rawResult = append(rawResult, c)
+		}
+		// NOTE RowsAffected is only known after all rows are read
+		n := rows.CommandTag().RowsAffected()
+		log.Println("rows affected:", n)
+		if n == 0 {
+			if r.Method == http.MethodPost {
+				w.WriteHeader(http.StatusInternalServerError)
+			} else {
+				w.WriteHeader(http.StatusNotFound)
+			}
+			return
+		} else {
+			if r.Method == http.MethodDelete {
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
 		}
 		jsonResult, err := json.Marshal(rawResult)
 		if err != nil {
