@@ -62,14 +62,14 @@ ex. curl host:9000/routes -d @routes.json
 
 route types
 ----------------------------------------
-type         HTTP             SQL
------        ----             ---          
-create       POST             INSERT
-read         GET              SELECT
-update       PUT              UPDATE
-delete       DELETE           DELETE
-transaction  POST PUT DELETE  TRANSACTION
-service      *                null
+type		 HTTP			  SQL
+-----		 ----			  ---		   
+create		 POST			  INSERT
+read		 GET			  SELECT
+update		 PUT			  UPDATE
+delete		 DELETE			  DELETE
+transaction	 POST PUT DELETE  TRANSACTION
+service		 *				  null
 
 service route type is proxied to service URL
 
@@ -77,26 +77,26 @@ example
 ----------------------------------------
 routes.json
 [
-    {
-        "Name": "object",
-        "Type": "read",
-        "URLScheme": "/api/object/{object_id}"
-    },
-    {
-        "Name": "object",
-        "Type": "create",
-        "URLScheme": "/api/object"
-    },
-    {
-        "Name": "object",
-        "Type": "update",
-        "URLScheme": "/api/object/{object_id}"
-    },
-    {
-        "Name": "object",
-        "Type": "delete",
-        "URLScheme": "/api/object/{object_id}"
-    },
+	{
+		"Name": "object",
+		"Type": "read",
+		"URLScheme": "/api/object/{object_id}"
+	},
+	{
+		"Name": "object",
+		"Type": "create",
+		"URLScheme": "/api/object"
+	},
+	{
+		"Name": "object",
+		"Type": "update",
+		"URLScheme": "/api/object/{object_id}"
+	},
+	{
+		"Name": "object",
+		"Type": "delete",
+		"URLScheme": "/api/object/{object_id}"
+	},
 	{
 		"Name": "objects",
 		"Type": "read",
