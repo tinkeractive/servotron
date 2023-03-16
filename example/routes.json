@@ -22,11 +22,11 @@
 		"URLScheme": "/api/bucket"
 	},
     {
-        "Name": "testservice",
+        "Name": "test",
         "Type": "service",
-        "URLScheme": "/api/testservice",
+        "URLScheme": "/api/service/test",
         "ServiceURL": "http://127.0.0.1:8001",
-        "Description": "testservice",
+        "Description": "service/test",
         "QueryParams": []
     }
 ]

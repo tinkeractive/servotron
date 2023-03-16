@@ -321,13 +321,29 @@ func AuthorizeReq(pool *pgxpool.Pool, wrapped func(http.ResponseWriter, *http.Re
 	CrudMap[http.MethodPost] = "insert"
 	CrudMap[http.MethodPut] = "update"
 	CrudMap[http.MethodDelete] = "delete"
+	// NOTE http connect is more complicated
+	// TODO consider removing
 	CrudMap[http.MethodConnect] = "service"
 	return func(w http.ResponseWriter, r *http.Request) {
-		routeName := mux.CurrentRoute(r).GetName()
+		currentRoute := mux.CurrentRoute(r)
+		routeName := currentRoute.GetName()
+		isServiceReq, err := IsServiceRequest(currentRoute)
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			if CONFIG.Debug {
+				w.Write(FormatErr(err.Error()))
+			}
+			return
+		}
+		reqType := CrudMap[r.Method]
+		if isServiceReq {
+			reqType = "service"
+		}
 		authPath := fmt.Sprintf(
 			"%s/auth/%s/%s.sql",
 			CONFIG.SQLRoot,
-			CrudMap[r.Method],
+			reqType,
 			routeName)
 		authPath = filepath.Clean(authPath)
 		q, err := os.ReadFile(authPath)
@@ -369,6 +385,20 @@ func AuthorizeReq(pool *pgxpool.Pool, wrapped func(http.ResponseWriter, *http.Re
 			w.WriteHeader(http.StatusForbidden)
 		}
 	}
+}
+
+func IsServiceRequest(r *mux.Route) (bool, error) {
+	result := false
+	methods, err := r.GetMethods()
+	if err != nil {
+		return result, err
+	}
+	for _, method := range methods {
+		if method == "CONNECT" {
+			return true, err
+		}
+	}
+	return result, err
 }
 
 func WrapQuery(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request) {
