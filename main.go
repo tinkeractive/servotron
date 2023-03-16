@@ -107,6 +107,7 @@ type Config struct {
 	SQLRoot           string
 	FileServers       map[string]string
 	TemplateServers   map[string]string
+	AppUserQuery      string
 	// runtime
 	QueryParams map[string][]string
 	Routes      []Route
@@ -143,6 +144,7 @@ func ParseConfig(b []byte) (Config, error) {
 		return c, err
 	}
 	c.SQLRoot = ResolveUserDir(who.HomeDir, c.SQLRoot)
+	c.AppUserQuery = ResolveUserDir(who.HomeDir, c.AppUserQuery)
 	for key, val := range c.FileServers {
 		c.FileServers[key] = ResolveUserDir(who.HomeDir, val)
 	}
@@ -655,9 +657,8 @@ func ExtractParams(r *http.Request) ([]interface{}, error) {
 // NOTE for server side includes and rendering of static content based on user info
 // NOTE the template handling is not intended to be a full on backend rendering engine
 // NOTE the only template input is a map of user info
-// NOTE depends on an api endpoint select/app_user/self.sql for user details
-// TODO allow specification of the app user query via config
-// TODO extend beyond base template and overlays via template processing config
+// NOTE depends on AppUserQuery for user details
+// NOTE multiple template dirs and overlays are possible via template config
 func HandleTemplateReq(pool *pgxpool.Pool, templateDir string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		params, err := ExtractParams(r)
@@ -669,9 +670,7 @@ func HandleTemplateReq(pool *pgxpool.Pool, templateDir string) func(w http.Respo
 			return
 		}
 		var result []byte
-		query := fmt.Sprintf("%s/select/app_user/self.sql", CONFIG.SQLRoot)
-		query = filepath.Clean(query)
-		q, err := os.ReadFile(query)
+		q, err := os.ReadFile(CONFIG.AppUserQuery)
 		if err != nil {
 			return
 		}

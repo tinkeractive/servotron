@@ -1,5 +1,6 @@
 {
 	"SQLRoot":"~/src/github.com/tinkeractive/servotron/example/api",
+	"AppUserQuery":"~/src/github.com/tinkeractive/servotron/example/api/select/app_user/self.sql",
 	"FileServers":{
 		"/assets":"~/src/github.com/tinkeractive/servotron/example/www",
 		"/lib":"~/src/github.com/tinkeractive/servotron/example/www"
