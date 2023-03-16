@@ -37,7 +37,6 @@ var SERVER *http.Server
 func main() {
 	configFilePath := flag.String("config", "", "config file path")
 	flag.Parse()
-	// TODO check config file path before attempting to read
 	configBytes, err := os.ReadFile(*configFilePath)
 	if err != nil {
 		log.Fatal(err)
@@ -323,11 +322,8 @@ func AuthorizeReq(pool *pgxpool.Pool, wrapped func(http.ResponseWriter, *http.Re
 	CrudMap[http.MethodPut] = "update"
 	CrudMap[http.MethodDelete] = "delete"
 	CrudMap[http.MethodConnect] = "service"
-	CrudMap[http.MethodPatch] = "admin"
 	return func(w http.ResponseWriter, r *http.Request) {
 		routeName := mux.CurrentRoute(r).GetName()
-		// TODO improve security
-		// TODO clean strings
 		authPath := fmt.Sprintf(
 			"%s/auth/%s/%s.sql",
 			CONFIG.SQLRoot,
