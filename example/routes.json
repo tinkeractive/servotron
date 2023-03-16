@@ -1,0 +1,32 @@
+[
+    {
+        "Name": "app_user/self",
+        "Type": "read",
+        "URLScheme": "/api/app_user/self",
+        "Description": "the app user self"
+    },
+	{
+		"Name": "bucket",
+		"Type": "read",
+		"URLScheme": "/api/bucket/{bucket_id}"
+	},
+	{
+		"Name": "buckets",
+		"Type": "read",
+		"URLScheme": "/api/buckets",
+        "QueryParams": ["active","{active}"]
+	},
+	{
+		"Name": "bucket",
+		"Type": "create",
+		"URLScheme": "/api/bucket"
+	},
+    {
+        "Name": "testservice",
+        "Type": "service",
+        "URLScheme": "/api/testservice",
+        "ServiceURL": "http://127.0.0.1:8001",
+        "Description": "testservice",
+        "QueryParams": []
+    }
+]

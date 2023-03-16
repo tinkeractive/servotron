@@ -1,0 +1,11 @@
+{{define "Content"}}
+	{{if eq "Superuser" (index . "app_role_name")}}
+	<h3>
+		Hello, {{index . "app_role_name"}}, {{index . "name"}}!
+	</h3>
+	{{else}}
+	<h3>
+		Buh-bye.
+	</h3>
+	{{end}}
+{{end}}
