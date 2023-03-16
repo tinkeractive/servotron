@@ -16,6 +16,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"os/user"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -42,6 +43,9 @@ func main() {
 		log.Fatal(err)
 	}
 	CONFIG, err = ParseConfig(configBytes)
+	if err != nil {
+		log.Fatal(err)
+	}
 	log.Println("config:", CONFIG.String())
 	pgxpoolConfig, err := pgxpool.ParseConfig(CONFIG.DBConnString)
 	if err != nil {
@@ -113,7 +117,7 @@ type Route struct {
 	Name        string
 	Type        string
 	URLScheme   string
-	QueryParams string
+	QueryParams []string
 	ServiceURL  string
 	Description string
 }
@@ -131,7 +135,29 @@ func ParseConfig(b []byte) (Config, error) {
 	c.DBNotifyChannels = []string{"public_default"}
 	c.AppUserCookieName = "EmailAddress"
 	err := json.Unmarshal(b, &c)
+	if err != nil {
+		return c, err
+	}
+	who, err := user.Current()
+	if err != nil {
+		return c, err
+	}
+	c.SQLRoot = ResolveUserDir(who.HomeDir, c.SQLRoot)
+	for key, val := range c.FileServers {
+		c.FileServers[key] = ResolveUserDir(who.HomeDir, val)
+	}
+	for key, val := range c.TemplateServers {
+		c.TemplateServers[key] = ResolveUserDir(who.HomeDir, val)
+	}
 	return c, err
+}
+
+func ResolveUserDir(homeDir, path string) string {
+	result := path
+	if strings.HasPrefix(path, "~/") {
+		result = filepath.Join(homeDir, path[2:])
+	}
+	return result
 }
 
 func LoadRoutesHandler(pool *pgxpool.Pool) func(w http.ResponseWriter, r *http.Request) {
@@ -231,12 +257,12 @@ func LoadRoutes(router *mux.Router, pool *pgxpool.Pool, routes []Route) error {
 				Name(r.Name).
 				Methods("GET", "POST", "PUT", "DELETE", "PATCH", "CONNECT")
 		case "read":
-			var params []string
-			err = json.Unmarshal([]byte(r.QueryParams), &params)
+//			var params []string
+//			err = json.Unmarshal([]byte(r.QueryParams), &params)
 			if err != nil {
 				return err
 			}
-			CONFIG.QueryParams[r.Name] = params
+			CONFIG.QueryParams[r.Name] = r.QueryParams
 			httpMethod := "GET"
 			router.HandleFunc(
 				r.URLScheme,
