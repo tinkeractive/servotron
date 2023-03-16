@@ -4,7 +4,7 @@ servotron
 haiku
 ----------------------------------------
 a deliverance -
-this app server for postgres
+an app server for postgres
 without ORM
 
 dependencies
