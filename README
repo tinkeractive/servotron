@@ -17,7 +17,7 @@ git clone
 go build
 go install
 
-configure
+configuration
 ----------------------------------------
 {
 	"SQLRoot":"~/path/to/api/queries/root/dir",
