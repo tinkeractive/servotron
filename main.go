@@ -257,11 +257,7 @@ func LoadRoutes(router *mux.Router, pool *pgxpool.Pool, routes []Route) error {
 				Name(r.Name).
 				Methods("GET", "POST", "PUT", "DELETE", "PATCH", "CONNECT")
 		case "read":
-//			var params []string
-//			err = json.Unmarshal([]byte(r.QueryParams), &params)
-			if err != nil {
-				return err
-			}
+			// store query params in global config mapped to route name
 			CONFIG.QueryParams[r.Name] = r.QueryParams
 			httpMethod := "GET"
 			router.HandleFunc(
