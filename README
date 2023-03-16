@@ -21,6 +21,7 @@ configuration
 ----------------------------------------
 {
 	"SQLRoot":"~/path/to/api/queries/root/dir",
+	"AppUserQuery":"~/path/to/app/user/api/query.sql",
 	"FileServers":{
 		"/assets":"~/path/to/static/content/www/assets",
 		"/lib":""~/path/to/static/content/www/lib"
