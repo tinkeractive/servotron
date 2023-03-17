@@ -1,3 +1,4 @@
+// TODO ingest OpenAPI specs for routes
 // TODO connection pools for multiple databases (reader, writer)
 // TODO consider prepared stmt handling
 // TODO submit prep stmt only when /routes endpoint is invoked and config param is set ???
