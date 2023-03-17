@@ -1,4 +1,7 @@
 // TODO connection pools for multiple databases (reader, writer)
+// TODO consider prepared stmt handling
+// TODO submit prep stmt only when /routes endpoint is invoked and config param is set ???
+// TODO would require a map of routes to prep stmt names
 
 package main
 
