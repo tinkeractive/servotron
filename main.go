@@ -133,7 +133,6 @@ func ParseConfig(b []byte) (Config, error) {
 	c.DBConnString = "postgresql://postgres@localhost:5432/postgres"
 	c.DBPoolSize = runtime.NumCPU()
 	c.DBNotifyChannels = []string{"public_default"}
-	c.AppUserCookieName = "EmailAddress"
 	err := json.Unmarshal(b, &c)
 	if err != nil {
 		return c, err
@@ -466,6 +465,19 @@ func ExecQuery(pool *pgxpool.Pool, method string, routeName string, params []int
 	return result, n, err
 }
 
+func GetJSON(cookies []*http.Cookie) (string, error) {
+	byt, err := json.Marshal(GetMap(cookies))
+	return string(byt), err
+}
+
+func GetMap(cookies []*http.Cookie) map[string]string {
+	result := make(map[string]string)
+	for _, cookie := range cookies {
+		result[cookie.Name] = cookie.Value
+	}
+	return result
+}
+
 func WrapExec(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -515,7 +527,14 @@ func WrapExec(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request) {
 			}
 			return
 		}
-		usernameCookie, err := r.Cookie(CONFIG.AppUserCookieName)
+		cookie := ""
+		var userCookie *http.Cookie
+		if CONFIG.AppUserCookieName == "" {
+			cookie, err = GetJSON(r.Cookies())
+		} else {
+			userCookie, err = r.Cookie(CONFIG.AppUserCookieName)
+			cookie = userCookie.Value
+		}
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -545,7 +564,7 @@ func WrapExec(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request) {
 		for rows.Next() {
 			vars := rows.RawValues()[0]
 			params = params[:0]
-			params = append(params, usernameCookie.Value)
+			params = append(params, cookie)
 			err = json.Unmarshal(vars, &returnMap)
 			if err != nil {
 				log.Println(err)
@@ -634,11 +653,19 @@ func FormatErr(err string) []byte {
 
 func ExtractParams(r *http.Request) ([]interface{}, error) {
 	var params []interface{}
-	usernameCookie, err := r.Cookie(CONFIG.AppUserCookieName)
+	cookie := ""
+	var userCookie *http.Cookie
+	var err error
+	if CONFIG.AppUserCookieName == "" {
+		cookie, err = GetJSON(r.Cookies())
+	} else {
+		userCookie, err = r.Cookie(CONFIG.AppUserCookieName)
+		cookie = userCookie.Value
+	}
 	if err != nil {
 		return params, err
 	}
-	params = append(params, usernameCookie.Value)
+	params = append(params, cookie)
 	pathTemplate, err := mux.CurrentRoute(r).GetPathTemplate()
 	if err != nil {
 		return params, err
@@ -777,7 +804,14 @@ func WrapTransaction(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request
 		}
 		scanner := bufio.NewScanner(manifestFh)
 		// TODO use ExtractParams
-		usernameCookie, err := r.Cookie(CONFIG.AppUserCookieName)
+		cookie := ""
+		var userCookie *http.Cookie
+		if CONFIG.AppUserCookieName == "" {
+			cookie, err = GetJSON(r.Cookies())
+		} else {
+			userCookie, err = r.Cookie(CONFIG.AppUserCookieName)
+			cookie = userCookie.Value
+		}
 		if err != nil {
 			log.Println(err)
 			if CONFIG.Debug {
@@ -813,7 +847,7 @@ func WrapTransaction(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request
 			_, err = tx.Exec(
 				context.Background(),
 				string(q),
-				usernameCookie.Value,
+				cookie,
 				arg)
 			if err != nil {
 				_ = tx.Rollback(context.Background())

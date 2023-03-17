@@ -21,7 +21,6 @@ configuration
 ----------------------------------------
 {
 	"SQLRoot":"~/path/to/api/queries/root/dir",
-	"AppUserQuery":"~/path/to/app/user/api/query.sql",
 	"FileServers":{
 		"/assets":"~/path/to/static/content/www/assets",
 		"/lib":""~/path/to/static/content/www/lib"
@@ -29,6 +28,7 @@ configuration
 	"TemplateServers":{
 		"/":"~/path/to/go/templates"
 	},
+	"AppUserQuery":"~/path/to/app/user/api/query.sql",
 	"ListenPort":"80"
 	"ManagementPort":"9000",
 	"DBConnString":"postgresql://postgres@localhost:5432/postgres",
@@ -37,6 +37,11 @@ configuration
 	"AppUserCookieName":"EmailAddress",
 	"Debug":true
 }
+
+app user cookie name
+----------------------------------------
+cookie used to identify user for authorization
+if empty string, all cookies passed as json key, value pairs
 
 file servers
 ----------------------------------------
@@ -78,4 +83,4 @@ load routes
 curl localhost:9000/routes -d @example/routes.json
 
 TODO finish example app
-TOOD example requests
+TODO example requests
