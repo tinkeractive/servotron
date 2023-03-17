@@ -1,10 +1,10 @@
 [
-    {
-        "Name": "app_user/self",
-        "Type": "read",
-        "URLScheme": "/api/app_user/self",
-        "Description": "the app user self"
-    },
+	{
+		"Name": "app_user/self",
+		"Type": "read",
+		"URLScheme": "/api/app_user/self",
+		"Description": "the app user self"
+	},
 	{
 		"Name": "bucket",
 		"Type": "create",
@@ -29,13 +29,13 @@
 		"Name": "buckets",
 		"Type": "read",
 		"URLScheme": "/api/buckets",
-        "QueryParams": ["active","{active}"]
+		"QueryParams": ["active","{active}"]
 	},
 	{
 		"Name": "bucket/objects",
 		"Type": "read",
 		"URLScheme": "/api/bucket/{bucket_id}/objects",
-        "QueryParams": ["active","{active}","limit","{limit}","offset","{offset}"]
+		"QueryParams": ["active","{active}","limit","{limit}","offset","{offset}"]
 	},
 	{
 		"Name": "object",
@@ -57,12 +57,12 @@
 		"Type": "delete",
 		"URLScheme": "/api/object/{object_id}"
 	},
-    {
-        "Name": "test",
-        "Type": "service",
-        "URLScheme": "/api/service/test",
-        "ServiceURL": "http://127.0.0.1:8001",
-        "Description": "service/test",
-        "QueryParams": []
-    }
+	{
+		"Name": "test",
+		"Type": "service",
+		"URLScheme": "/api/service/test",
+		"ServiceURL": "http://127.0.0.1:8001",
+		"Description": "service/test",
+		"QueryParams": []
+	}
 ]
