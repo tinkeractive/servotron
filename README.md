@@ -1,16 +1,16 @@
 # servotron
 
 ## haiku
-a deliverance -
-an app server for postgres
+a deliverance -\
+an app server for postgres\
 without ORM
 
 ## dependencies
 go
 
 ## install
-git clone
-go build
+git clone\
+go build\
 go install
 
 ## configuration
@@ -36,16 +36,16 @@ go install
 ```
 
 ## app user cookie name
-cookie used to identify user for authorization
+cookie used to identify user for authorization\
 if empty string, all cookies passed as json key, value pairs
 
 ## file servers
 static content such as HTML
 
-## template servers
-templates written in the go text/template style
-useful for server side includes
-useful for altering content based on user roles/permissions
+## template servers\
+templates written in the go text/template style\
+useful for server side includes\
+useful for altering content based on user roles/permissions\
 server passes result of app user query to template
 
 ## route types
@@ -71,5 +71,5 @@ servotron --config example/config.json
 ## load routes
 curl localhost:9000/routes -d @example/routes.json
 
-TODO finish example app
+TODO finish example app\
 TODO example requests
