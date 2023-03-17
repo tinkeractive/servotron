@@ -1,24 +1,20 @@
-servotron
-========================================
++servotron
 
-haiku
-----------------------------------------
+++haiku
 a deliverance -
 an app server for postgres
 without ORM
 
-dependencies
-----------------------------------------
+++dependencies
 go
 
-install
-----------------------------------------
+++install
 git clone
 go build
 go install
 
-configuration
-----------------------------------------
+++configuration
+```json
 {
 	"SQLRoot":"~/path/to/api/queries/root/dir",
 	"FileServers":{
@@ -37,25 +33,22 @@ configuration
 	"AppUserCookieName":"EmailAddress",
 	"Debug":true
 }
+```
 
-app user cookie name
-----------------------------------------
+++app user cookie name
 cookie used to identify user for authorization
 if empty string, all cookies passed as json key, value pairs
 
-file servers
-----------------------------------------
+++file servers
 static content such as HTML
 
-template servers
-----------------------------------------
+++template servers
 templates written in the go text/template style
 useful for server side includes
 useful for altering content based on user roles/permissions
 server passes result of app user query to template
 
-route types
-----------------------------------------
+++route types
 type         HTTP             SQL
 -----        ----             ---          
 create       POST             INSERT
@@ -67,19 +60,15 @@ service      *                null
 
 service route type is proxied to service URL
 
-example
-========================================
++example
 
-prerequesites
-----------------------------------------
+++prerequesites
 psql -f example/schema/app/public.sql
 
-run
-----------------------------------------
+++run
 servotron --config example/config.json
 
-load routes
-----------------------------------------
+++load routes
 curl localhost:9000/routes -d @example/routes.json
 
 TODO finish example app
