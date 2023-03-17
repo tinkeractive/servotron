@@ -1,5 +1,3 @@
-[![Go Reference](https://pkg.go.dev/badge/github.com/tinkeractive/servotron)](https://pkg.go.dev/github.com/tinkeractive/servotron)
-
 # servotron
 
 ## haiku
@@ -51,14 +49,14 @@ useful for altering content based on user roles/permissions\
 server passes result of app user query to template
 
 ## route types
-type         HTTP             SQL
------        ----             ---          
-create       POST             INSERT
-read         GET              SELECT
-update       PUT              UPDATE
-delete       DELETE           DELETE
-transaction  POST PUT DELETE  TRANSACTION
-service      *                null
+type|HTTP|SQL
+----|----|---
+create|POST|INSERT
+read|GET|SELECT
+update|PUT|UPDATE
+delete|DELETE|DELETE
+transaction|POST|PUT|DELETE|TRANSACTION
+service|*|null
 
 service route type is proxied to service URL
 
