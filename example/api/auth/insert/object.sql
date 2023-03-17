@@ -3,7 +3,7 @@ with recordset as (
 	select *
 	from json_to_recordset($2) as x(
 		bucket_id int,
-		description varchar
+		name varchar
 	)
 )
 select count(*)>0

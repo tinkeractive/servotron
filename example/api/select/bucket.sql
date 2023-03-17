@@ -4,4 +4,5 @@ from (
 	from bucket
 	where $1=$1
 		and bucket_id=$2::int
+		and active
 ) as r

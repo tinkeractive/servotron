@@ -11,7 +11,7 @@ from (
 	-- the AppUserCookieName (first) arg can be suppressed
 	-- hence, $1=$1
 	where $1=$1
-		bucket=$2
+		and bucket_id=$2
 		and ($3::boolean is null or active=$3)
 	limit $4
 	offset $5

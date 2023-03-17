@@ -7,6 +7,9 @@ select count(*)>0
 from bucket_map_app_user
 join app_user using(app_user_id)
 where email_address=$1
-	and ($2::boolean is null or $2=$2)
+	and bucket_id=$2
+	and ($3::boolean is null or $3=$3)
+	and ($4::int is null or $4=$4)
+	and ($5::int is null or $5=$5)
 
 

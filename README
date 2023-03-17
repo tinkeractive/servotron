@@ -47,8 +47,7 @@ template servers
 templates written in the go text/template style
 useful for server side includes
 useful for altering content based on user roles/permissions
-depends on an app_user/self endpoint
-server passes app_user/self query output to template
+server passes result of app user query to template
 
 route types
 ----------------------------------------

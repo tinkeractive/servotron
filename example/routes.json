@@ -7,7 +7,22 @@
     },
 	{
 		"Name": "bucket",
+		"Type": "create",
+		"URLScheme": "/api/bucket"
+	},
+	{
+		"Name": "bucket",
 		"Type": "read",
+		"URLScheme": "/api/bucket/{bucket_id}"
+	},
+	{
+		"Name": "bucket",
+		"Type": "update",
+		"URLScheme": "/api/bucket"
+	},
+	{
+		"Name": "bucket",
+		"Type": "delete",
 		"URLScheme": "/api/bucket/{bucket_id}"
 	},
 	{
@@ -17,9 +32,30 @@
         "QueryParams": ["active","{active}"]
 	},
 	{
-		"Name": "bucket",
+		"Name": "bucket/objects",
+		"Type": "read",
+		"URLScheme": "/api/bucket/{bucket_id}/objects",
+        "QueryParams": ["active","{active}","limit","{limit}","offset","{offset}"]
+	},
+	{
+		"Name": "object",
 		"Type": "create",
-		"URLScheme": "/api/bucket"
+		"URLScheme": "/api/object"
+	},
+	{
+		"Name": "object",
+		"Type": "read",
+		"URLScheme": "/api/object/{object_id}"
+	},
+	{
+		"Name": "object",
+		"Type": "update",
+		"URLScheme": "/api/object"
+	},
+	{
+		"Name": "object",
+		"Type": "delete",
+		"URLScheme": "/api/object/{object_id}"
 	},
     {
         "Name": "test",
