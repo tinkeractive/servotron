@@ -1,3 +1,5 @@
+[![Go Reference](https://pkg.go.dev/badge/github.com/tinkeractive/servotron)](https://pkg.go.dev/github.com/tinkeractive/servotron)
+
 # servotron
 
 ## haiku
