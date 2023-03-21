@@ -82,13 +82,19 @@ Service route type is proxied to the service URL.
 # Example
 
 ## Prerequisites
-`psql -f example/schema/app/public.sql`
+```shell
+psql -f example/schema/app/public.sql
+```
 
 ## Run
-`servotron --config example/config.json`
+```shell
+servotron --config example/config.json`
+```
 
 ## Load Routes
-`curl localhost:9000/routes -d @example/routes.json`
+```shell
+curl localhost:9000/routes -d @example/routes.json`
+```
 
 TODO finish example app\
 TODO example requests
