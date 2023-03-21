@@ -5,6 +5,10 @@ A deliverance -\
 an app server for Postgres\
 without ORM.
 
+## Picture
+
+![Alt text](doc/img/ServotronFlow.png "ServotronFlow")
+
 ## Dependencies
 go
 
