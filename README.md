@@ -1,9 +1,9 @@
 # servotron
 
 ## Haiku
-a deliverance -\
-an app server for postgres\
-without ORM
+A deliverance -\
+an app server for Postgres\
+without ORM.
 
 ## Dependencies
 go
@@ -36,17 +36,17 @@ go install
 ```
 
 ### App User Cookie Name
-cookie used to identify user for authorization\
-if empty string, all cookies passed as json key, value pairs
+Cookie used to identify user for authorization.\
+If empty string, then all cookies are passed as json key, value pairs.
 
 ### File Servers
-static content such as HTML
+Static content such as HTML.
 
 ### Template Servers
-templates written in the go text/template style\
-useful for server side includes\
-useful for altering content based on user roles/permissions\
-server passes result of app user query to template
+Templates written in the go text/template style.\
+Useful for server side includes.\
+Useful for altering content based on user roles/permissions.\
+Server passes the result of app user query to the template.
 
 ## Route Types
 type|HTTP|SQL
@@ -58,7 +58,7 @@ delete|DELETE|DELETE
 transaction|POST|PUT|DELETE|TRANSACTION
 service|*|null
 
-service route type is proxied to service URL
+Service route type is proxied to the service URL.
 
 # Example
 
