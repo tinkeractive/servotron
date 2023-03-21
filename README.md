@@ -15,7 +15,8 @@ User info from cookies is always passed as the first argument to all prepared st
 Authorization queries should return a boolean value indicating whether the request is authorized for the user.\
 All API prepared statements should return JSON. This is easily accomplished via PostgreSQL's JSON functions.\
 For GET and DELETE requests, arguments that are parsed from the route and query string are passed in the order they appear in the route specification.\
-For POST and PUT requests, the request body JSON is passed as the second argument. The JSON string can be transformed into a record or recordset (for bulk inserts) via PostgreSQL's JSON functions. The returned data from the INSERT and UPDATE should contain the fields required of the associated SELECT for the resource.
+For POST and PUT requests, the request body JSON is passed as the second argument. The JSON string can be transformed into a record or recordset (for bulk inserts) via PostgreSQL's JSON functions. The returned data from the INSERT and UPDATE should contain the fields required of the associated SELECT for the resource.\
+Service routes are proxied to associated service URLs.
 
 ## Flow Diagram
 
