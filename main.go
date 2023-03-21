@@ -469,12 +469,12 @@ func ExecQuery(pool *pgxpool.Pool, method string, routeName string, params []int
 	return result, n, err
 }
 
-func GetJSON(cookies []*http.Cookie) (string, error) {
-	byt, err := json.Marshal(GetMap(cookies))
+func GetJSONFromCookies(cookies []*http.Cookie) (string, error) {
+	byt, err := json.Marshal(GetMapFromCookies(cookies))
 	return string(byt), err
 }
 
-func GetMap(cookies []*http.Cookie) map[string]string {
+func GetMapFromCookies(cookies []*http.Cookie) map[string]string {
 	result := make(map[string]string)
 	for _, cookie := range cookies {
 		result[cookie.Name] = cookie.Value
@@ -534,7 +534,7 @@ func WrapExec(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request) {
 		cookie := ""
 		var userCookie *http.Cookie
 		if CONFIG.AppUserCookieName == "" {
-			cookie, err = GetJSON(r.Cookies())
+			cookie, err = GetJSONFromCookies(r.Cookies())
 		} else {
 			userCookie, err = r.Cookie(CONFIG.AppUserCookieName)
 			cookie = userCookie.Value
@@ -662,7 +662,7 @@ func ExtractParams(r *http.Request) ([]interface{}, error) {
 	var userCookie *http.Cookie
 	var err error
 	if CONFIG.AppUserCookieName == "" {
-		cookie, err = GetJSON(r.Cookies())
+		cookie, err = GetJSONFromCookies(r.Cookies())
 	} else {
 		userCookie, err = r.Cookie(CONFIG.AppUserCookieName)
 		cookie = userCookie.Value
@@ -812,7 +812,7 @@ func WrapTransaction(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request
 		cookie := ""
 		var userCookie *http.Cookie
 		if CONFIG.AppUserCookieName == "" {
-			cookie, err = GetJSON(r.Cookies())
+			cookie, err = GetJSONFromCookies(r.Cookies())
 		} else {
 			userCookie, err = r.Cookie(CONFIG.AppUserCookieName)
 			cookie = userCookie.Value
