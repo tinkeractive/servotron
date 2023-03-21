@@ -34,6 +34,9 @@ go install
 	"Debug":true
 }
 ```
+### Root Directories
+File paths specified with tilde will resolve to the user home dir.\
+This can cause errors when running with `sudo`.
 
 ### App User Cookie Name
 Cookie used to identify user for authorization.\
@@ -47,6 +50,20 @@ Templates written in the go text/template style.\
 Useful for server side includes.\
 Useful for altering content based on user roles/permissions.\
 Server passes the result of app user query to the template.
+
+### Management Port
+For admin functionality such as route loading.
+
+### Pool Size
+If not specified, this defaults to the number of CPUs.
+
+### Notify Channels
+Likely to be removed.\
+Intended to enqueue messages.\
+This functionality can be achieved by writing specialized agent listeners.
+
+### Debug
+If true, server writes error message responses to client.
 
 ## Route Types
 type|HTTP|SQL
