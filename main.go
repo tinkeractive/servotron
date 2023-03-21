@@ -565,6 +565,7 @@ func WrapExec(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request) {
 		var returnMap map[string]interface{}
 		var rawResult []json.RawMessage
 		// NOTE rows.RawValues are only valid until next call to Next
+		// TODO refactor: violates linux style guide nesting recommendation
 		for rows.Next() {
 			vars := rows.RawValues()[0]
 			params = params[:0]
