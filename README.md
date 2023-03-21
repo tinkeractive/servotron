@@ -62,7 +62,7 @@ Service route type is proxied to the service URL.
 
 # Example
 
-## Prerequesites
+## Prerequisites
 psql -f example/schema/app/public.sql
 
 ## Run
