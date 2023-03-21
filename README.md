@@ -6,7 +6,9 @@ an app server for Postgres\
 without ORM.
 
 ## Why?
-"Object-Relational mapping is the Vietnam of our industry."
+"...Object/Relational Mapping is the Vietnam of Computer Science."\
+
+source: https://www.odbms.org/wp-content/uploads/2013/11/031.01-Neward-The-Vietnam-of-Computer-Science-June-2006.pdf
 
 ## How?
 SQL.\
