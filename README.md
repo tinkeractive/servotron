@@ -5,7 +5,7 @@ A deliverance -\
 an app server for Postgres\
 without ORM.
 
-## Picture
+## Flow Diagram
 
 ![Alt text](doc/img/ServotronFlow.png "ServotronFlow")
 
