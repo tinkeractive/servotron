@@ -9,9 +9,11 @@ without ORM.
 go
 
 ## Install
-git clone\
-go build\
+```shell
+git clone
+go build
 go install
+```
 
 ## Configuration
 ```json
@@ -80,13 +82,13 @@ Service route type is proxied to the service URL.
 # Example
 
 ## Prerequisites
-psql -f example/schema/app/public.sql
+`psql -f example/schema/app/public.sql`
 
 ## Run
-servotron --config example/config.json
+`servotron --config example/config.json`
 
 ## Load Routes
-curl localhost:9000/routes -d @example/routes.json
+`curl localhost:9000/routes -d @example/routes.json`
 
 TODO finish example app\
 TODO example requests
