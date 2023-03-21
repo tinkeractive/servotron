@@ -9,7 +9,7 @@ without ORM.
 go
 
 ## Install
-```shell
+```bash
 git clone
 go build
 go install
@@ -82,17 +82,17 @@ Service route type is proxied to the service URL.
 # Example
 
 ## Prerequisites
-```shell
+```bash
 psql -f example/schema/app/public.sql
 ```
 
 ## Run
-```shell
+```bash
 servotron --config example/config.json`
 ```
 
 ## Load Routes
-```shell
+```bash
 curl localhost:9000/routes -d @example/routes.json`
 ```
 
