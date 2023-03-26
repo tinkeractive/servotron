@@ -5,12 +5,12 @@ A deliverance -\
 an app server for Postgres\
 without ORM.
 
-## Why?
+## Why
 "...Object/Relational Mapping is the Vietnam of Computer Science."
 
 source: https://www.odbms.org/wp-content/uploads/2013/11/031.01-Neward-The-Vietnam-of-Computer-Science-June-2006.pdf
 
-## How?
+## How
   * SQL.
   * Prepared statements provide authorization for row-level security and API endpoints.
   * User info from cookies is always passed as the first argument to all prepared statements.
@@ -20,7 +20,7 @@ source: https://www.odbms.org/wp-content/uploads/2013/11/031.01-Neward-The-Vietn
   * For POST and PUT requests, the request body JSON is passed as the second argument. The JSON string can be transformed into a record or recordset (for bulk inserts) via PostgreSQL's JSON functions. The returned data from the INSERT and UPDATE should contain the fields required of the associated SELECT for the resource.
   * Service routes are proxied to associated service URLs.
 
-## Flow Diagram
+## Diagram
 
 ![Alt text](doc/img/ServotronFlow.png "ServotronFlow")
 
