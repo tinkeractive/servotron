@@ -11,14 +11,14 @@ without ORM.
 source: https://www.odbms.org/wp-content/uploads/2013/11/031.01-Neward-The-Vietnam-of-Computer-Science-June-2006.pdf
 
 ## How?
-..* SQL.
-..* Prepared statements provide authorization for row-level security and API endpoints.
-..* User info from cookies is always passed as the first argument to all prepared statements.
-..* Authorization queries should return a boolean value indicating whether the request is authorized for the user.
-..* All API prepared statements should return JSON (easily accomplished via PostgreSQL's JSON functions).
-..* For GET and DELETE requests, arguments that are parsed from the route and query string are passed in the order they appear in the route specification.
-..* For POST and PUT requests, the request body JSON is passed as the second argument. The JSON string can be transformed into a record or recordset (for bulk inserts) via PostgreSQL's JSON functions. The returned data from the INSERT and UPDATE should contain the fields required of the associated SELECT for the resource.
-..* Service routes are proxied to associated service URLs.
+  * SQL.
+  * Prepared statements provide authorization for row-level security and API endpoints.
+  * User info from cookies is always passed as the first argument to all prepared statements.
+  * Authorization queries should return a boolean value indicating whether the request is authorized for the user.
+  * All API prepared statements should return JSON (easily accomplished via PostgreSQL's JSON functions).
+  * For GET and DELETE requests, arguments that are parsed from the route and query string are passed in the order they appear in the route specification.
+  * For POST and PUT requests, the request body JSON is passed as the second argument. The JSON string can be transformed into a record or recordset (for bulk inserts) via PostgreSQL's JSON functions. The returned data from the INSERT and UPDATE should contain the fields required of the associated SELECT for the resource.
+  * Service routes are proxied to associated service URLs.
 
 ## Flow Diagram
 
