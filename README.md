@@ -12,12 +12,12 @@ source: https://www.odbms.org/wp-content/uploads/2013/11/031.01-Neward-The-Vietn
 
 ## How
   * SQL.
-  * Prepared statements for authorization (row-level security) and API endpoints.
-  * User info from cookies always passed as the first argument to all prepared statements.
-  * Authorization queries should return a boolean value indicating whether the request is authorized for the user.
-  * All API prepared statements should return JSON (easily accomplished via PostgreSQL's JSON functions).
+  * Prepared statements provide authorization (row-level security) and API endpoints.
+  * User info (from cookies) is always passed as the first argument to all prepared statements.
+  * Authorization queries must return a boolean value indicating whether the request is authorized for the user.
+  * API queries must return JSON (via PostgreSQL's JSON functions).
   * For GET and DELETE requests, arguments that are parsed from the route and query string are passed in the order they appear in the route specification.
-  * For POST and PUT requests, the request body JSON is passed as the second argument. The JSON string can be transformed into a record or recordset (for bulk inserts) via PostgreSQL's JSON functions. The returned data from the INSERT and UPDATE should contain the fields required of the associated SELECT for the resource.
+  * For POST and PUT requests, the request body JSON is passed as the second argument. The JSON string can be transformed into a record or recordset (for bulk inserts) via PostgreSQL's JSON functions. The data returning from the INSERT and UPDATE queries should contain the fields required of the associated SELECT for the resource.
   * Service routes are proxied to associated service URLs.
 
 ## Diagram
