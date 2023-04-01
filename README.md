@@ -1,11 +1,13 @@
 # servotron
 
 ## Haiku
+<br/>
 <p align="center">
 A deliverance -<br/>
 an app server for Postgres<br/>
 without ORM.
 </p>
+<br/>
 
 ## Why
 >Although it may seem trite to say it, <i>Object/Relational Mapping is the Vietnam of Computer Science</i>. It represents a quagmire which starts well, gets more complicated as time passes, and before long entraps its users in a commitment that has no clear demarcation point, no clear win conditions, and no clear exit strategy.
