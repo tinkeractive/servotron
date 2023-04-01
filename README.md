@@ -1,9 +1,11 @@
 # servotron
 
 ## Haiku
-A deliverance -\
-an app server for Postgres\
+<p align="center">
+A deliverance -<br/>
+an app server for Postgres<br/>
 without ORM.
+</p>
 
 ## Why
 "...Object/Relational Mapping is the Vietnam of Computer Science."\
