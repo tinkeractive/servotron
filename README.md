@@ -111,13 +111,42 @@ psql -f example/schema/app/public.sql
 
 ## Run
 ```bash
-servotron --config example/config.json`
+servotron --config example/config.json
 ```
 
 ## Load Routes
 ```bash
-curl localhost:9000/routes -d @example/routes.json`
+curl localhost:9000/routes -d @example/routes.json
 ```
 
-TODO finish example app\
-TODO example requests
+## Request
+```bash
+curl -b 'EmailAddress=user_a@app.com' localhost:8000/api/buckets
+[{"bucket_id":1,"name":"bucket_a","active":true}]
+
+curl -b 'EmailAddress=user_a@app.com' localhost:8000/api/bucket -XPOST -d '[{"name":"New Bucket"}]'
+[{"bucket_id":3,"name":"New Bucket","active":true}]
+
+curl -b 'EmailAddress=user_a@app.com' localhost:8000/api/buckets
+[{"bucket_id":1,"name":"bucket_a","active":true},
+ {"bucket_id":3,"name":"New Bucket","active":true}]
+
+curl -b 'EmailAddress=user_a@app.com' localhost:8000/api/bucket/3
+{"bucket_id":3,"name":"New Bucket","active":true}
+
+curl -b 'EmailAddress=user_a@app.com' localhost:8000/api/bucket -XPUT -d '{"bucket_id":3,"name":"Newish Bucket"}'
+[{"bucket_id":3,"name":"Newish Bucket","active":true}]
+
+curl -b 'EmailAddress=user_a@app.com' localhost:8000/api/buckets
+[{"bucket_id":1,"name":"bucket_a","active":true},
+ {"bucket_id":3,"name":"Newish Bucket","active":true}]
+
+curl -b 'EmailAddress=user_a@app.com' localhost:8000/api/bucket/3 -XDELETE
+
+curl -b 'EmailAddress=user_a@app.com' localhost:8000/api/buckets
+[{"bucket_id":1,"name":"bucket_a","active":true}]
+
+curl -b 'EmailAddress=user_a@app.com' localhost:8000/api/buckets?active=false
+[{"bucket_id":3,"name":"Newish Bucket","active":false}]
+```
+
