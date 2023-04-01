@@ -1,7 +1,7 @@
 -- atomic requests should return json object via row_to_json
 select row_to_json(r)
 from (
-	select *
+	select object.*
 	from object
 	where $1=$1
 		and object_id=$2::int
