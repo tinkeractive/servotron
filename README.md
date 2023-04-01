@@ -8,10 +8,8 @@ without ORM.
 </p>
 
 ## Why
-"...Object/Relational Mapping is the Vietnam of Computer Science."\
-\
-"It represents a quagmire which starts well, gets more complicated as time passes, and before long entraps its users in a commitment that has no clear demarcation point, no clear win conditions, and no clear exit strategy."\
-\
+>Although it may seem trite to say it, <i>Object/Relational Mapping is the Vietnam of Computer Science</i>. It represents a quagmire which starts well, gets more complicated as time passes, and before long entraps its users in a commitment that has no clear demarcation point, no clear win conditions, and no clear exit strategy.
+
 https://www.odbms.org/wp-content/uploads/2013/11/031.01-Neward-The-Vietnam-of-Computer-Science-June-2006.pdf
 
 ## How
