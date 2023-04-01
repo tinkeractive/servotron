@@ -6,8 +6,10 @@ an app server for Postgres\
 without ORM.
 
 ## Why
-"...Object/Relational Mapping is the Vietnam of Computer Science."
-
+"...Object/Relational Mapping is the Vietnam of Computer Science."\
+\
+"It represents a quagmire which starts well, gets more complicated as time passes, and before long entraps its users in a commitment that has no clear demarcation point, no clear win conditions, and no clear exit strategy."\
+\
 source: https://www.odbms.org/wp-content/uploads/2013/11/031.01-Neward-The-Vietnam-of-Computer-Science-June-2006.pdf
 
 ## How
