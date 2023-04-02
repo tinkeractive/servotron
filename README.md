@@ -49,13 +49,18 @@ go install
 	"TemplateServers":{
 		"/":"~/path/to/go/templates"
 	},
-	"AppUserQuery":"~/path/to/app/user/api/query.sql",
+	"AppUserInfo":{
+		"ParseFrom":"Header",
+		"Field":"Authorization",
+		"Type":"JWT",
+		"Claim":"email_address",
+		"Query":"~/src/github.com/tinkeractive/servotron/example/api/select/app_user/self.sql"
+	},
 	"ListenPort":"80"
 	"ManagementPort":"9000",
 	"DBConnString":"postgresql://postgres@localhost:5432/postgres",
 	"DBPoolSize":4,
 	"DBNotifyChannels":["public_default"],
-	"AppUserCookieName":"EmailAddress",
 	"Debug":true
 }
 ```
@@ -63,9 +68,11 @@ go install
 File paths specified with tilde will resolve to the user home dir.\
 This can cause errors when running with `sudo`.
 
-### App User Cookie Name
-Cookie used to identify user for authorization.\
-If empty string, then all cookies are passed as json key, value pairs.
+### App User Info
+Used to identify user for authorization.\
+Can be parsed from Header or Cookie.\
+If ParseFrom is Header, then specify Field and Type (JWT or String). If Type is JWT, then specify Claim to be passed to queries.\
+If ParseFrom is Cookie, then specify Name. If empty string, then all cookies are passed as json key, value pairs.
 
 ### File Servers
 Static content such as HTML.
@@ -111,7 +118,7 @@ psql -f example/schema/app/public.sql
 
 ## Run
 ```bash
-servotron --config example/config.json
+servotron --config example/config.cookie.json
 ```
 
 ## Load Routes

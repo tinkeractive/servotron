@@ -10,6 +10,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -106,11 +107,10 @@ type Config struct {
 	DBConnString      string
 	DBPoolSize        int
 	DBNotifyChannels  []string
-	AppUserCookieName string
+	AppUserInfo       map[string]string
 	SQLRoot           string
 	FileServers       map[string]string
 	TemplateServers   map[string]string
-	AppUserQuery      string
 	// runtime
 	QueryParams map[string][]string
 	Routes      []Route
@@ -146,7 +146,7 @@ func ParseConfig(b []byte) (Config, error) {
 		return c, err
 	}
 	c.SQLRoot = ResolveUserDir(who.HomeDir, c.SQLRoot)
-	c.AppUserQuery = ResolveUserDir(who.HomeDir, c.AppUserQuery)
+	c.AppUserInfo["Query"] = ResolveUserDir(who.HomeDir, c.AppUserInfo["Query"])
 	for key, val := range c.FileServers {
 		c.FileServers[key] = ResolveUserDir(who.HomeDir, val)
 	}
@@ -469,6 +469,40 @@ func ExecQuery(pool *pgxpool.Pool, method string, routeName string, params []int
 	return result, n, err
 }
 
+func GetAppUserInfo(r *http.Request) (string, error) {
+	result := ""
+	var err error
+	if CONFIG.AppUserInfo["ParseFrom"] == "Header" {
+		result = r.Header.Get(CONFIG.AppUserInfo["Field"])
+		if CONFIG.AppUserInfo["Type"] == "JWT" {
+			split := strings.Split(result, " ")
+			segments := strings.Split(split[len(split)-1], ".")
+			if len(segments) == 3 {
+				byt, err := base64.RawURLEncoding.DecodeString(segments[1])
+				if err == nil {
+					mapped := make(map[string]interface{})
+					err := json.Unmarshal(byt, &mapped)
+					if err == nil {
+						result = mapped[CONFIG.AppUserInfo["Claim"]].(string)
+					}
+				}
+			}
+		}
+	}
+	if CONFIG.AppUserInfo["ParseFrom"] == "Cookie" {
+		var userCookie *http.Cookie
+		if CONFIG.AppUserInfo["Name"] == "" {
+			result, err = GetJSONFromCookies(r.Cookies())
+		} else {
+			userCookie, err = r.Cookie(CONFIG.AppUserInfo["Key"])
+			if err == nil {
+				result = userCookie.Value
+			}
+		}
+	}
+	return result, err
+}
+
 func GetJSONFromCookies(cookies []*http.Cookie) (string, error) {
 	byt, err := json.Marshal(GetMapFromCookies(cookies))
 	return string(byt), err
@@ -531,14 +565,7 @@ func WrapExec(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request) {
 			}
 			return
 		}
-		cookie := ""
-		var userCookie *http.Cookie
-		if CONFIG.AppUserCookieName == "" {
-			cookie, err = GetJSONFromCookies(r.Cookies())
-		} else {
-			userCookie, err = r.Cookie(CONFIG.AppUserCookieName)
-			cookie = userCookie.Value
-		}
+		appUserInfo, err := GetAppUserInfo(r)
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -569,7 +596,7 @@ func WrapExec(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request) {
 		for rows.Next() {
 			vars := rows.RawValues()[0]
 			params = params[:0]
-			params = append(params, cookie)
+			params = append(params, appUserInfo)
 			err = json.Unmarshal(vars, &returnMap)
 			if err != nil {
 				log.Println(err)
@@ -658,19 +685,11 @@ func FormatErr(err string) []byte {
 
 func ExtractParams(r *http.Request) ([]interface{}, error) {
 	var params []interface{}
-	cookie := ""
-	var userCookie *http.Cookie
-	var err error
-	if CONFIG.AppUserCookieName == "" {
-		cookie, err = GetJSONFromCookies(r.Cookies())
-	} else {
-		userCookie, err = r.Cookie(CONFIG.AppUserCookieName)
-		cookie = userCookie.Value
-	}
+	appUserInfo, err := GetAppUserInfo(r)
 	if err != nil {
 		return params, err
 	}
-	params = append(params, cookie)
+	params = append(params, appUserInfo)
 	pathTemplate, err := mux.CurrentRoute(r).GetPathTemplate()
 	if err != nil {
 		return params, err
@@ -715,7 +734,7 @@ func ExtractParams(r *http.Request) ([]interface{}, error) {
 // NOTE for server side includes and rendering of static content based on user info
 // NOTE the template handling is not intended to be a full on backend rendering engine
 // NOTE the only template input is a map of user info
-// NOTE depends on AppUserQuery for user details
+// NOTE depends on AppUserInfo["Query"] for user details
 // NOTE multiple template dirs and overlays are possible via template config
 func HandleTemplateReq(pool *pgxpool.Pool, templateDir string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -728,7 +747,7 @@ func HandleTemplateReq(pool *pgxpool.Pool, templateDir string) func(w http.Respo
 			return
 		}
 		var result []byte
-		q, err := os.ReadFile(CONFIG.AppUserQuery)
+		q, err := os.ReadFile(CONFIG.AppUserInfo["Query"])
 		if err != nil {
 			return
 		}
@@ -809,14 +828,7 @@ func WrapTransaction(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request
 		}
 		scanner := bufio.NewScanner(manifestFh)
 		// TODO use ExtractParams
-		cookie := ""
-		var userCookie *http.Cookie
-		if CONFIG.AppUserCookieName == "" {
-			cookie, err = GetJSONFromCookies(r.Cookies())
-		} else {
-			userCookie, err = r.Cookie(CONFIG.AppUserCookieName)
-			cookie = userCookie.Value
-		}
+		appUserInfo, err := GetAppUserInfo(r)
 		if err != nil {
 			log.Println(err)
 			if CONFIG.Debug {
@@ -852,7 +864,7 @@ func WrapTransaction(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request
 			_, err = tx.Exec(
 				context.Background(),
 				string(q),
-				cookie,
+				appUserInfo,
 				arg)
 			if err != nil {
 				_ = tx.Rollback(context.Background())

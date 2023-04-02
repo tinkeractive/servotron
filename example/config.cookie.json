@@ -1,6 +1,5 @@
 {
 	"SQLRoot":"~/src/github.com/tinkeractive/servotron/example/api",
-	"AppUserQuery":"~/src/github.com/tinkeractive/servotron/example/api/select/app_user/self.sql",
 	"FileServers":{
 		"/assets":"~/src/github.com/tinkeractive/servotron/example/www",
 		"/lib":"~/src/github.com/tinkeractive/servotron/example/www"
@@ -8,9 +7,14 @@
 	"TemplateServers":{
 		"/":"~/src/github.com/tinkeractive/servotron/example/template"
 	},
+	"AppUserInfo":{
+		"ParseFrom":"Cookie",
+		"Name":"EmailAddress",
+		"Type":"String",
+		"Query":"~/src/github.com/tinkeractive/servotron/example/api/select/app_user/self.sql"
+	},
 	"ListenPort":"8000",
 	"ManagementPort":"9000",
-	"AppUserCookieName":"EmailAddress",
 	"DBConnString":"postgres://postgres@localhost:5434",
 	"DBPoolSize":12,
 	"Debug":true
