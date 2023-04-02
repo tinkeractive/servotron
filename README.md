@@ -16,7 +16,7 @@ https://www.odbms.org/wp-content/uploads/2013/11/031.01-Neward-The-Vietnam-of-Co
 
 ## How
   * SQL.
-  * Prepared statements provide authorization (row-level security) and API endpoints.
+  * Prepared statements provide authorization and API endpoints.
   * Authorization queries must return a boolean value indicating whether the request is authorized for the user.
   * API queries return JSON (via PostgreSQL's JSON functions).
   * User info (from cookies) is always the first argument to all prepared statements. 
