@@ -71,8 +71,8 @@ This can cause errors when running with `sudo`.
 ### App User Info
 Used to identify user for authorization.\
 Can be parsed from Header or Cookie.\
-If ParseFrom is Header, then specify Field and Type (JWT or String). If Type is JWT, then specify Claim to be passed to queries.\
-If ParseFrom is Cookie, then specify Name. If empty string, then all cookies are passed as json key, value pairs.
+If ParseFrom is Header, then specify Field and Type (JWT or String). If Type is JWT, then specify Claim. If Claim is empty string, then the entire JWT payload is passed.\
+If ParseFrom is Cookie, then specify Name. If Name is empty string, then all cookies are passed as JSON key-value pairs.
 
 ### File Servers
 Static content such as HTML.

@@ -137,6 +137,9 @@ func ParseConfig(b []byte) (Config, error) {
 	c.DBConnString = "postgresql://postgres@localhost:5432/postgres"
 	c.DBPoolSize = runtime.NumCPU()
 	c.DBNotifyChannels = []string{"public_default"}
+	c.AppUserInfo = make(map[string]string)
+	c.AppUserInfo["Claim"] = ""
+	c.AppUserInfo["Name"] = ""
 	err := json.Unmarshal(b, &c)
 	if err != nil {
 		return c, err
@@ -477,27 +480,37 @@ func GetAppUserInfo(r *http.Request) (string, error) {
 		if CONFIG.AppUserInfo["Type"] == "JWT" {
 			split := strings.Split(result, " ")
 			segments := strings.Split(split[len(split)-1], ".")
-			if len(segments) == 3 {
-				byt, err := base64.RawURLEncoding.DecodeString(segments[1])
-				if err == nil {
-					mapped := make(map[string]interface{})
-					err := json.Unmarshal(byt, &mapped)
-					if err == nil {
-						result = mapped[CONFIG.AppUserInfo["Claim"]].(string)
-					}
-				}
+			if len(segments) != 3 {
+				return result, fmt.Errorf(
+					"invalid JWT format. expected 3 segments, found %i",
+					len(segments))
+			}
+			byt, err := base64.RawURLEncoding.DecodeString(segments[1])
+			if err != nil {
+				return result, err
+			}
+			if CONFIG.AppUserInfo["Claim"] == "" {
+				log.Println(string(byt))
+				return string(byt), err
+			}
+			mapped := make(map[string]interface{})
+			err = json.Unmarshal(byt, &mapped)
+			if err != nil {
+				return result, err
+			}
+			if claim, ok := CONFIG.AppUserInfo["Claim"]; ok {
+				result = mapped[claim].(string)
 			}
 		}
 	}
 	if CONFIG.AppUserInfo["ParseFrom"] == "Cookie" {
 		var userCookie *http.Cookie
 		if CONFIG.AppUserInfo["Name"] == "" {
-			result, err = GetJSONFromCookies(r.Cookies())
-		} else {
-			userCookie, err = r.Cookie(CONFIG.AppUserInfo["Key"])
-			if err == nil {
-				result = userCookie.Value
-			}
+			return GetJSONFromCookies(r.Cookies())
+		}
+		userCookie, err = r.Cookie(CONFIG.AppUserInfo["Key"])
+		if err == nil {
+			result = userCookie.Value
 		}
 	}
 	return result, err
