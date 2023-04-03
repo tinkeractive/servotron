@@ -323,6 +323,14 @@ func ListenForNotifications(conn *pgxpool.Conn, pool *pgxpool.Pool, channels []s
 	}
 }
 
+func TeeError(w http.ResponseWriter, err error) {
+	log.Println(err)
+	w.WriteHeader(http.StatusInternalServerError)
+	if CONFIG.Debug {
+		w.Write(FormatErr(err.Error()))
+	}
+}
+
 func AuthorizeReq(pool *pgxpool.Pool, wrapped func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
 	CrudMap := make(map[string]string)
 	CrudMap[http.MethodGet] = "select"
@@ -337,11 +345,7 @@ func AuthorizeReq(pool *pgxpool.Pool, wrapped func(http.ResponseWriter, *http.Re
 		routeName := currentRoute.GetName()
 		isServiceReq, err := IsServiceRequest(currentRoute)
 		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			if CONFIG.Debug {
-				w.Write(FormatErr(err.Error()))
-			}
+			TeeError(w, err)
 			return
 		}
 		reqType := CrudMap[r.Method]
@@ -356,41 +360,25 @@ func AuthorizeReq(pool *pgxpool.Pool, wrapped func(http.ResponseWriter, *http.Re
 		authPath = filepath.Clean(authPath)
 		q, err := os.ReadFile(authPath)
 		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			if CONFIG.Debug {
-				w.Write(FormatErr(err.Error()))
-			}
+			TeeError(w, err)
 			return
 		}
 		params, err := ExtractParams(r)
 		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			if CONFIG.Debug {
-				w.Write(FormatErr(err.Error()))
-			}
+			TeeError(w, err)
 			return
 		}
 		log.Println("authorizing", r.Method, routeName, params)
 		var isAuthorized bool
 		tx, err := pool.Begin(context.Background())
 		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			if CONFIG.Debug {
-				w.Write(FormatErr(err.Error()))
-			}
+			TeeError(w, err)
 			return
 		}
 		defer tx.Rollback(context.Background())
 		err = SetLocalParams(&tx, r)
 		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			if CONFIG.Debug {
-				w.Write(FormatErr(err.Error()))
-			}
+			TeeError(w, err)
 			return
 		}
 		err = tx.QueryRow(
@@ -399,20 +387,12 @@ func AuthorizeReq(pool *pgxpool.Pool, wrapped func(http.ResponseWriter, *http.Re
 			params...).
 			Scan(&isAuthorized)
 		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			if CONFIG.Debug {
-				w.Write(FormatErr(err.Error()))
-			}
+			TeeError(w, err)
 			return
 		}
 		err = tx.Commit(context.Background())
 		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			if CONFIG.Debug {
-				w.Write(FormatErr(err.Error()))
-			}
+			TeeError(w, err)
 			return
 		}
 		if isAuthorized {
@@ -443,49 +423,29 @@ func WrapQuery(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request) {
 		routeName := mux.CurrentRoute(r).GetName()
 		params, err := ExtractParams(r)
 		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			if CONFIG.Debug {
-				w.Write(FormatErr(err.Error()))
-			}
+			TeeError(w, err)
 			return
 		}
 		log.Println("processing", r.Method, routeName, params)
 		tx, err := pool.Begin(context.Background())
 		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			if CONFIG.Debug {
-				w.Write(FormatErr(err.Error()))
-			}
+			TeeError(w, err)
 			return
 		}
 		defer tx.Rollback(context.Background())
 		err = SetLocalParams(&tx, r)
 		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			if CONFIG.Debug {
-				w.Write(FormatErr(err.Error()))
-			}
+			TeeError(w, err)
 			return
 		}
 		result, n, err := ExecQuery(&tx, r.Method, routeName, params)
 		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			if CONFIG.Debug {
-				w.Write(FormatErr(err.Error()))
-			}
+			TeeError(w, err)
 			return
 		}
 		err = tx.Commit(context.Background())
 		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			if CONFIG.Debug {
-				w.Write(FormatErr(err.Error()))
-			}
+			TeeError(w, err)
 			return
 		}
 		if len(result) == 0 {
@@ -653,51 +613,31 @@ func WrapExec(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request) {
 		path = filepath.Clean(path)
 		q, err := os.ReadFile(path)
 		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			if CONFIG.Debug {
-				w.Write(FormatErr(err.Error()))
-			}
+			TeeError(w, err)
 			return
 		}
 		params, err := ExtractParams(r)
 		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			if CONFIG.Debug {
-				w.Write(FormatErr(err.Error()))
-			}
+			TeeError(w, err)
 			return
 		}
 		log.Println("processing", r.Method, routeName, params)
 		log.Println("executing", path, "with arguments", params)
 		tx, err := pool.Begin(context.Background())
 		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			if CONFIG.Debug {
-				w.Write(FormatErr(err.Error()))
-			}
+			TeeError(w, err)
 			return
 		}
 		defer tx.Rollback(context.Background())
 		err = SetLocalParams(&tx, r)
 		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			if CONFIG.Debug {
-				w.Write(FormatErr(err.Error()))
-			}
+			TeeError(w, err)
 			return
 		}
 		rows, err := tx.Query(context.Background(), string(q), params...)
 		defer rows.Close()
 		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			if CONFIG.Debug {
-				w.Write(FormatErr(err.Error()))
-			}
+			TeeError(w, err)
 			return
 		}
 		var route Route
@@ -732,11 +672,7 @@ func WrapExec(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request) {
 			params = params[:0]
 			err = json.Unmarshal(rawValue, &returnMap)
 			if err != nil {
-				log.Println(err)
-				w.WriteHeader(http.StatusInternalServerError)
-				if CONFIG.Debug {
-					w.Write(FormatErr(err.Error()))
-				}
+				TeeError(w, err)
 				return
 			}
 			for _, p := range pathVars {
@@ -751,11 +687,7 @@ func WrapExec(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request) {
 					if q == k {
 						b, err := json.Marshal(v)
 						if err != nil {
-							log.Println(err)
-							w.WriteHeader(http.StatusInternalServerError)
-							if CONFIG.Debug {
-								w.Write(FormatErr(err.Error()))
-							}
+							TeeError(w, err)
 							return
 						}
 						str.String = string(b)
@@ -768,11 +700,7 @@ func WrapExec(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request) {
 			log.Println("returning", r.Method, routeName, params)
 			result, _, err := ExecQuery(&tx, "GET", routeName, params)
 			if err != nil {
-				log.Println(err)
-				w.WriteHeader(http.StatusInternalServerError)
-				if CONFIG.Debug {
-					w.Write(FormatErr(err.Error()))
-				}
+				TeeError(w, err)
 				return
 			}
 			c := make([]byte, len(result))
@@ -781,11 +709,7 @@ func WrapExec(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request) {
 		}
 		err = tx.Commit(context.Background())
 		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			if CONFIG.Debug {
-				w.Write(FormatErr(err.Error()))
-			}
+			TeeError(w, err)
 			return
 		}
 		log.Println("rows affected:", n)
@@ -804,11 +728,7 @@ func WrapExec(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request) {
 		}
 		jsonResult, err := json.Marshal(rawResult)
 		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			if CONFIG.Debug {
-				w.Write(FormatErr(err.Error()))
-			}
+			TeeError(w, err)
 			return
 		}
 		if r.Method == http.MethodPost {
