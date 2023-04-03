@@ -72,10 +72,10 @@ This can cause errors when running with `sudo`.
 
 ### App User Auth
 Used to identify user for authorization.\
+Set in the `app_user.auth` parameter and available via `current_setting` function during request. 
 Can be parsed from Header or Cookie.\
-If ParseFrom is Header, then specify Field and Type (JWT or String). If Type is JWT, then specify Claim. If Claim is empty string, then the entire JWT payload is passed.\
-If ParseFrom is Cookie, then specify Name. If Name is empty string, then all cookies are passed as JSON key-value pairs.\
-Set in the `app_user.auth` parameter and available via `current_setting` function during request.
+If ParseFrom is Header, then specify Field and Type (JWT or String). If Type is JWT, then specify Claim. If Claim is not present, then the entire JWT payload is set.\
+If ParseFrom is Cookie, then specify Name. If Name is not present, then all cookies are set as a JSON object of key-value pairs.\
 
 ### App User Local Params
 Used to set parameters for the duration of the request.\
