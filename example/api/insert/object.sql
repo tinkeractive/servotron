@@ -4,7 +4,7 @@
 -- the associated select query result becomes response body
 with recordset as (
 	select *
-	from json_to_recordset($2) as x(
+	from json_to_recordset($1) as x(
 		bucket_id int,
 		name varchar
 	)
@@ -12,5 +12,4 @@ with recordset as (
 insert into object(bucket_id, name)
 select *
 from recordset
-where $1=$1
 returning row_to_json(object.*)

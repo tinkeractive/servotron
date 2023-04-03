@@ -7,14 +7,10 @@ select json_agg(r)
 from (
 	select *
 	from object
-	-- each param must be used and since auth was already performed
-	-- the AppUserCookieName (first) arg can be suppressed
-	-- hence, $1=$1
-	where $1=$1
-		and bucket_id=$2
-		and ($3::boolean is null or active=$3)
-	limit $4
-	offset $5
+	where bucket_id=$1
+		and ($2::boolean is null or active=$2)
+	limit $3
+	offset $4
 ) as r
 
 

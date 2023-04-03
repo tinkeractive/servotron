@@ -3,7 +3,6 @@ select row_to_json(r)
 from (
 	select object.*
 	from object
-	where $1=$1
-		and object_id=$2::int
+	where object_id=$1::int
 		and active
 ) as r

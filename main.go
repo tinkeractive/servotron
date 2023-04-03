@@ -30,6 +30,7 @@ import (
 	"text/template"
 
 	"github.com/gorilla/mux"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -101,16 +102,17 @@ func main() {
 
 type Config struct {
 	// file
-	Debug             bool
-	ListenPort        string
-	ManagementPort    string
-	DBConnString      string
-	DBPoolSize        int
-	DBNotifyChannels  []string
-	AppUserInfo       map[string]string
-	SQLRoot           string
-	FileServers       map[string]string
-	TemplateServers   map[string]string
+	Debug              bool
+	ListenPort         string
+	ManagementPort     string
+	DBConnString       string
+	DBPoolSize         int
+	DBNotifyChannels   []string
+	AppUserAuth        map[string]string
+	AppUserLocalParams map[string]string
+	SQLRoot            string
+	FileServers        map[string]string
+	TemplateServers    map[string]string
 	// runtime
 	QueryParams map[string][]string
 	Routes      []Route
@@ -137,9 +139,10 @@ func ParseConfig(b []byte) (Config, error) {
 	c.DBConnString = "postgresql://postgres@localhost:5432/postgres"
 	c.DBPoolSize = runtime.NumCPU()
 	c.DBNotifyChannels = []string{"public_default"}
-	c.AppUserInfo = make(map[string]string)
-	c.AppUserInfo["Claim"] = ""
-	c.AppUserInfo["Name"] = ""
+	c.AppUserAuth = make(map[string]string)
+	c.AppUserAuth["Claim"] = ""
+	c.AppUserAuth["Name"] = ""
+	c.AppUserLocalParams = make(map[string]string)
 	err := json.Unmarshal(b, &c)
 	if err != nil {
 		return c, err
@@ -149,7 +152,6 @@ func ParseConfig(b []byte) (Config, error) {
 		return c, err
 	}
 	c.SQLRoot = ResolveUserDir(who.HomeDir, c.SQLRoot)
-	c.AppUserInfo["Query"] = ResolveUserDir(who.HomeDir, c.AppUserInfo["Query"])
 	for key, val := range c.FileServers {
 		c.FileServers[key] = ResolveUserDir(who.HomeDir, val)
 	}
@@ -372,11 +374,39 @@ func AuthorizeReq(pool *pgxpool.Pool, wrapped func(http.ResponseWriter, *http.Re
 		}
 		log.Println("authorizing", r.Method, routeName, params)
 		var isAuthorized bool
-		err = pool.QueryRow(
+		tx, err := pool.Begin(context.Background())
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			if CONFIG.Debug {
+				w.Write(FormatErr(err.Error()))
+			}
+			return
+		}
+		defer tx.Rollback(context.Background())
+		err = SetLocalParams(&tx, r)
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			if CONFIG.Debug {
+				w.Write(FormatErr(err.Error()))
+			}
+			return
+		}
+		err = tx.QueryRow(
 			context.Background(),
 			string(q),
 			params...).
 			Scan(&isAuthorized)
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			if CONFIG.Debug {
+				w.Write(FormatErr(err.Error()))
+			}
+			return
+		}
+		err = tx.Commit(context.Background())
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -421,7 +451,35 @@ func WrapQuery(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request) {
 			return
 		}
 		log.Println("processing", r.Method, routeName, params)
-		result, n, err := ExecQuery(pool, r.Method, routeName, params)
+		tx, err := pool.Begin(context.Background())
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			if CONFIG.Debug {
+				w.Write(FormatErr(err.Error()))
+			}
+			return
+		}
+		defer tx.Rollback(context.Background())
+		err = SetLocalParams(&tx, r)
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			if CONFIG.Debug {
+				w.Write(FormatErr(err.Error()))
+			}
+			return
+		}
+		result, n, err := ExecQuery(&tx, r.Method, routeName, params)
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			if CONFIG.Debug {
+				w.Write(FormatErr(err.Error()))
+			}
+			return
+		}
+		err = tx.Commit(context.Background())
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -443,7 +501,51 @@ func WrapQuery(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func ExecQuery(pool *pgxpool.Pool, method string, routeName string, params []interface{}) ([]byte, int64, error) {
+func SetLocalParams(tx *pgx.Tx, r *http.Request) error {
+	appUserAuth, err := GetAppUserAuth(r)
+	if err != nil {
+		return err
+	}
+	q := "select set_config('app_user.auth',$1,true)"
+	_, err = (*tx).Exec(context.Background(), q, appUserAuth)
+	if err != nil {
+		return err
+	}
+	appUserCookies, err := GetJSONFromCookies(r.Cookies())
+	q = "select set_config('app_user.cookies',$1,true)"
+	_, err = (*tx).Exec(context.Background(), q, appUserCookies)
+	if err != nil {
+		return err
+	}
+	// get system user for file path expansion
+	who, err := user.Current()
+	if err != nil {
+		return err
+	}
+	var queryPath string
+	var result string
+	var byt []byte
+	for k, v := range CONFIG.AppUserLocalParams {
+		queryPath = ResolveUserDir(who.HomeDir, v)
+		byt, err = os.ReadFile(queryPath)
+		if err != nil {
+			return err
+		}
+		err := (*tx).QueryRow(context.Background(), string(byt)).Scan(&result)
+		if err != nil {
+			return err
+		}
+		log.Println(k, result)
+		q = fmt.Sprintf("select set_config('app_user.%s',$1,true)", k)
+		_, err = (*tx).Exec(context.Background(), q, result)
+		if err != nil {
+			return err
+		}
+	}
+	return err
+}
+
+func ExecQuery(tx *pgx.Tx, method string, routeName string, params []interface{}) ([]byte, int64, error) {
 	var result []byte
 	var n int64
 	pathTmpl := ""
@@ -460,7 +562,7 @@ func ExecQuery(pool *pgxpool.Pool, method string, routeName string, params []int
 		return result, n, err
 	}
 	log.Println("executing", path, params)
-	rows, err := pool.Query(context.Background(), string(q), params...)
+	rows, err := (*tx).Query(context.Background(), string(q), params...)
 	defer rows.Close()
 	if err != nil {
 		return result, n, err
@@ -472,12 +574,12 @@ func ExecQuery(pool *pgxpool.Pool, method string, routeName string, params []int
 	return result, n, err
 }
 
-func GetAppUserInfo(r *http.Request) (string, error) {
+func GetAppUserAuth(r *http.Request) (string, error) {
 	result := ""
 	var err error
-	if CONFIG.AppUserInfo["ParseFrom"] == "Header" {
-		result = r.Header.Get(CONFIG.AppUserInfo["Field"])
-		if CONFIG.AppUserInfo["Type"] == "JWT" {
+	if CONFIG.AppUserAuth["ParseFrom"] == "Header" {
+		result = r.Header.Get(CONFIG.AppUserAuth["Field"])
+		if CONFIG.AppUserAuth["Type"] == "JWT" {
 			split := strings.Split(result, " ")
 			segments := strings.Split(split[len(split)-1], ".")
 			if len(segments) != 3 {
@@ -489,8 +591,7 @@ func GetAppUserInfo(r *http.Request) (string, error) {
 			if err != nil {
 				return result, err
 			}
-			if CONFIG.AppUserInfo["Claim"] == "" {
-				log.Println(string(byt))
+			if CONFIG.AppUserAuth["Claim"] == "" {
 				return string(byt), err
 			}
 			mapped := make(map[string]interface{})
@@ -498,17 +599,19 @@ func GetAppUserInfo(r *http.Request) (string, error) {
 			if err != nil {
 				return result, err
 			}
-			if claim, ok := CONFIG.AppUserInfo["Claim"]; ok {
-				result = mapped[claim].(string)
+			if configClaim, ok := CONFIG.AppUserAuth["Claim"]; ok {
+				if claim, ok := mapped[configClaim]; ok {
+					result = claim.(string)
+				}
 			}
 		}
 	}
-	if CONFIG.AppUserInfo["ParseFrom"] == "Cookie" {
+	if CONFIG.AppUserAuth["ParseFrom"] == "Cookie" {
 		var userCookie *http.Cookie
-		if CONFIG.AppUserInfo["Name"] == "" {
+		if CONFIG.AppUserAuth["Name"] == "" {
 			return GetJSONFromCookies(r.Cookies())
 		}
-		userCookie, err = r.Cookie(CONFIG.AppUserInfo["Key"])
+		userCookie, err = r.Cookie(CONFIG.AppUserAuth["Key"])
 		if err == nil {
 			result = userCookie.Value
 		}
@@ -568,8 +671,7 @@ func WrapExec(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request) {
 		}
 		log.Println("processing", r.Method, routeName, params)
 		log.Println("executing", path, "with arguments", params)
-		rows, err := pool.Query(context.Background(), string(q), params...)
-		defer rows.Close()
+		tx, err := pool.Begin(context.Background())
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -578,7 +680,18 @@ func WrapExec(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request) {
 			}
 			return
 		}
-		appUserInfo, err := GetAppUserInfo(r)
+		defer tx.Rollback(context.Background())
+		err = SetLocalParams(&tx, r)
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			if CONFIG.Debug {
+				w.Write(FormatErr(err.Error()))
+			}
+			return
+		}
+		rows, err := tx.Query(context.Background(), string(q), params...)
+		defer rows.Close()
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -593,7 +706,6 @@ func WrapExec(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request) {
 				break
 			}
 		}
-		log.Println(route)
 		// non-greedy capturing with (?U)
 		re := regexp.MustCompile(`(?U){(.*)}`)
 		groups := re.FindAllStringSubmatch(route.URLScheme, -1)
@@ -605,12 +717,20 @@ func WrapExec(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request) {
 		var returnMap map[string]interface{}
 		var rawResult []json.RawMessage
 		// NOTE rows.RawValues are only valid until next call to Next
-		// TODO refactor: violates linux style guide nesting recommendation
+		var rawValue []byte
+		var rawValues [][]byte
 		for rows.Next() {
-			vars := rows.RawValues()[0]
+			rawValue = make([]byte, len(rows.RawValues()[0]))
+			_ = copy(rawValue, rows.RawValues()[0])
+			rawValues = append(rawValues, rawValue)
+		}
+		// NOTE RowsAffected is only known after all rows are read
+		n := rows.CommandTag().RowsAffected()
+		rows.Close()
+		// TODO refactor: violates linux style guide nesting recommendation
+		for _, rawValue := range rawValues {
 			params = params[:0]
-			params = append(params, appUserInfo)
-			err = json.Unmarshal(vars, &returnMap)
+			err = json.Unmarshal(rawValue, &returnMap)
 			if err != nil {
 				log.Println(err)
 				w.WriteHeader(http.StatusInternalServerError)
@@ -645,9 +765,8 @@ func WrapExec(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request) {
 				}
 				params = append(params, str)
 			}
-			log.Println("params", params)
 			log.Println("returning", r.Method, routeName, params)
-			result, _, err := ExecQuery(pool, "GET", routeName, params)
+			result, _, err := ExecQuery(&tx, "GET", routeName, params)
 			if err != nil {
 				log.Println(err)
 				w.WriteHeader(http.StatusInternalServerError)
@@ -660,8 +779,15 @@ func WrapExec(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request) {
 			copy(c, result)
 			rawResult = append(rawResult, c)
 		}
-		// NOTE RowsAffected is only known after all rows are read
-		n := rows.CommandTag().RowsAffected()
+		err = tx.Commit(context.Background())
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			if CONFIG.Debug {
+				w.Write(FormatErr(err.Error()))
+			}
+			return
+		}
 		log.Println("rows affected:", n)
 		if n == 0 {
 			if r.Method == http.MethodPost {
@@ -698,11 +824,6 @@ func FormatErr(err string) []byte {
 
 func ExtractParams(r *http.Request) ([]interface{}, error) {
 	var params []interface{}
-	appUserInfo, err := GetAppUserInfo(r)
-	if err != nil {
-		return params, err
-	}
-	params = append(params, appUserInfo)
 	pathTemplate, err := mux.CurrentRoute(r).GetPathTemplate()
 	if err != nil {
 		return params, err
@@ -747,7 +868,7 @@ func ExtractParams(r *http.Request) ([]interface{}, error) {
 // NOTE for server side includes and rendering of static content based on user info
 // NOTE the template handling is not intended to be a full on backend rendering engine
 // NOTE the only template input is a map of user info
-// NOTE depends on AppUserInfo["Query"] for user details
+// NOTE depends on AppUserLocalParams["info"] for user details
 // NOTE multiple template dirs and overlays are possible via template config
 func HandleTemplateReq(pool *pgxpool.Pool, templateDir string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -760,7 +881,7 @@ func HandleTemplateReq(pool *pgxpool.Pool, templateDir string) func(w http.Respo
 			return
 		}
 		var result []byte
-		q, err := os.ReadFile(CONFIG.AppUserInfo["Query"])
+		q, err := os.ReadFile(CONFIG.AppUserLocalParams["info"])
 		if err != nil {
 			return
 		}
@@ -841,7 +962,7 @@ func WrapTransaction(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request
 		}
 		scanner := bufio.NewScanner(manifestFh)
 		// TODO use ExtractParams
-		appUserInfo, err := GetAppUserInfo(r)
+		appUserAuth, err := GetAppUserAuth(r)
 		if err != nil {
 			log.Println(err)
 			if CONFIG.Debug {
@@ -877,7 +998,7 @@ func WrapTransaction(pool *pgxpool.Pool) func(http.ResponseWriter, *http.Request
 			_, err = tx.Exec(
 				context.Background(),
 				string(q),
-				appUserInfo,
+				appUserAuth,
 				arg)
 			if err != nil {
 				_ = tx.Rollback(context.Background())

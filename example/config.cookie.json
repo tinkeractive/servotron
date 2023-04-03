@@ -7,11 +7,12 @@
 	"TemplateServers":{
 		"/":"~/src/github.com/tinkeractive/servotron/example/template"
 	},
-	"AppUserInfo":{
-		"ParseFrom":"Cookie",
-		"Name":"EmailAddress",
-		"Type":"String",
-		"Query":"~/src/github.com/tinkeractive/servotron/example/api/select/app_user/self.sql"
+	"AppUserAuth":{
+		"ParseFrom":"Cookie"
+	},
+	"AppUserLocalParams":{
+		"info":"~/src/github.com/tinkeractive/servotron/example/api/select/app_user/self.sql",
+		"id":"~/src/github.com/tinkeractive/servotron/example/api/select/app_user/id.sql"
 	},
 	"ListenPort":"8000",
 	"ManagementPort":"9000",

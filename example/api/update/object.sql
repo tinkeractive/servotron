@@ -1,12 +1,12 @@
 with record as (
-	select * from json_to_record($2) as x(
+	select * from json_to_record($1) as x(
 		object_id int,
 		name varchar
 	)
 )
 update object
-set name=record.name
+set name=record.name,
+	updated_by=current_setting('app_user.id')::int
 from record
-where $1=$1
-	and object.object_id=record.object_id
+where object.object_id=record.object_id
 returning row_to_json(object.*)

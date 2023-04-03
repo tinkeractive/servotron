@@ -1,3 +1,2 @@
 delete from object
-where $1=$1
-	and object_id=$2::int
+where object_id=$1::int

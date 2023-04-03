@@ -8,5 +8,5 @@ from (
 	from app_user
 	join app_user_map_app_role using(app_user_id)
 	join app_role using(app_role_id)
-	where email_address=$1
+	where email_address=current_setting('app_user.auth')::json->>'email_address'
 ) as r
