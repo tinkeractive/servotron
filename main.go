@@ -158,6 +158,9 @@ func ParseConfig(b []byte) (Config, error) {
 	for key, val := range c.TemplateServers {
 		c.TemplateServers[key] = ResolveUserDir(who.HomeDir, val)
 	}
+	for key, val := range c.AppUserLocalParams {
+		c.AppUserLocalParams[key] = ResolveUserDir(who.HomeDir, val)
+	}
 	return c, err
 }
 
@@ -478,16 +481,10 @@ func SetLocalParams(tx *pgx.Tx, r *http.Request) error {
 		return err
 	}
 	// get system user for file path expansion
-	who, err := user.Current()
-	if err != nil {
-		return err
-	}
-	var queryPath string
 	var result string
 	var byt []byte
 	for k, v := range CONFIG.AppUserLocalParams {
-		queryPath = ResolveUserDir(who.HomeDir, v)
-		byt, err = os.ReadFile(queryPath)
+		byt, err = os.ReadFile(v)
 		if err != nil {
 			return err
 		}
@@ -794,32 +791,45 @@ func HandleTemplateReq(pool *pgxpool.Pool, templateDir string) func(w http.Respo
 	return func(w http.ResponseWriter, r *http.Request) {
 		params, err := ExtractParams(r)
 		if err != nil {
-			log.Println(err)
-			if CONFIG.Debug {
-				w.Write(FormatErr(err.Error()))
-			}
+			TeeError(w, err)
 			return
 		}
 		var result []byte
 		q, err := os.ReadFile(CONFIG.AppUserLocalParams["info"])
 		if err != nil {
+			TeeError(w, err)
 			return
 		}
-		rows, err := pool.Query(context.Background(), string(q), params...)
+		tx, err := pool.Begin(context.Background())
 		if err != nil {
+			TeeError(w, err)
+			return
+		}
+		defer tx.Rollback(context.Background())
+		err = SetLocalParams(&tx, r)
+		if err != nil {
+			TeeError(w, err)
+			return
+		}
+		rows, err := tx.Query(context.Background(), string(q), params...)
+		if err != nil {
+			TeeError(w, err)
 			return
 		}
 		defer rows.Close()
 		for rows.Next() {
 			result = rows.RawValues()[0]
 		}
+		err = tx.Commit(context.Background())
+		if err != nil {
+			TeeError(w, err)
+			return
+		}
+		log.Println(string(result))
 		var appUser map[string]interface{}
 		err = json.Unmarshal(result, &appUser)
 		if err != nil {
-			log.Println(err)
-			if CONFIG.Debug {
-				w.Write(FormatErr(err.Error()))
-			}
+			TeeError(w, err)
 			return
 		}
 		funcMap := template.FuncMap{}
@@ -830,10 +840,7 @@ func HandleTemplateReq(pool *pgxpool.Pool, templateDir string) func(w http.Respo
 			Funcs(funcMap).
 			ParseFiles(baseTmpl)
 		if err != nil {
-			log.Println(err)
-			if CONFIG.Debug {
-				w.Write(FormatErr(err.Error()))
-			}
+			TeeError(w, err)
 			return
 		}
 		reqTmpl := fmt.Sprintf(
@@ -843,18 +850,12 @@ func HandleTemplateReq(pool *pgxpool.Pool, templateDir string) func(w http.Respo
 		reqTmpl = filepath.Clean(reqTmpl)
 		overlay, err := template.Must(base.Clone()).ParseFiles(reqTmpl)
 		if err != nil {
-			log.Println(err)
-			if CONFIG.Debug {
-				w.Write(FormatErr(err.Error()))
-			}
+			TeeError(w, err)
 			return
 		}
 		err = overlay.Execute(w, appUser)
 		if err != nil {
-			log.Println(err)
-			if CONFIG.Debug {
-				w.Write(FormatErr(err.Error()))
-			}
+			TeeError(w, err)
 			return
 		}
 	}
