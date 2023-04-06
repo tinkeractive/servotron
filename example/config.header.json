@@ -1,11 +1,11 @@
 {
-	"SQLRoot":"~/src/github.com/tinkeractive/servotron/example/api",
+	"SQLRoot":"example/api",
 	"FileServers":{
-		"/assets":"~/src/github.com/tinkeractive/servotron/example/www",
-		"/lib":"~/src/github.com/tinkeractive/servotron/example/www"
+		"/assets":"example/www",
+		"/lib":"example/www"
 	},
 	"TemplateServers":{
-		"/":"~/src/github.com/tinkeractive/servotron/example/template"
+		"/":"example/template"
 	},
 	"AppUserAuth":{
 		"ParseFrom":"Header",
@@ -13,8 +13,8 @@
 		"Type":"JWT"
 	},
 	"AppUserLocalParams":{
-		"info":"~/src/github.com/tinkeractive/servotron/example/api/select/app_user/self.sql",
-		"id":"~/src/github.com/tinkeractive/servotron/example/api/select/app_user/id.sql"
+		"info":"example/api/select/app_user/self.sql",
+		"id":"example/api/select/app_user/id.sql"
 	},
 	"ListenPort":"8000",
 	"ManagementPort":"9000",

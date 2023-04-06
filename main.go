@@ -151,25 +151,37 @@ func ParseConfig(b []byte) (Config, error) {
 	if err != nil {
 		return c, err
 	}
-	c.SQLRoot = ResolveUserDir(who.HomeDir, c.SQLRoot)
+	c.SQLRoot, err = ResolveUserDir(who.HomeDir, c.SQLRoot)
+	if err != nil {
+		return c, err
+	}
 	for key, val := range c.FileServers {
-		c.FileServers[key] = ResolveUserDir(who.HomeDir, val)
+		c.FileServers[key], err = ResolveUserDir(who.HomeDir, val)
+		if err != nil {
+			return c, err
+		}
 	}
 	for key, val := range c.TemplateServers {
-		c.TemplateServers[key] = ResolveUserDir(who.HomeDir, val)
+		c.TemplateServers[key], err = ResolveUserDir(who.HomeDir, val)
+		if err != nil {
+			return c, err
+		}
 	}
 	for key, val := range c.AppUserLocalParams {
-		c.AppUserLocalParams[key] = ResolveUserDir(who.HomeDir, val)
+		c.AppUserLocalParams[key], err = ResolveUserDir(who.HomeDir, val)
+		if err != nil {
+			return c, err
+		}
 	}
 	return c, err
 }
 
-func ResolveUserDir(homeDir, path string) string {
+func ResolveUserDir(homeDir, path string) (string, error) {
 	result := path
 	if strings.HasPrefix(path, "~/") {
 		result = filepath.Join(homeDir, path[2:])
 	}
-	return result
+	return filepath.Abs(result)
 }
 
 func LoadRoutesHandler(pool *pgxpool.Pool) func(w http.ResponseWriter, r *http.Request) {
