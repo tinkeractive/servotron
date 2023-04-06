@@ -41,13 +41,13 @@ go install
 ## Configuration
 ```json
 {
-	"SQLRoot":"~/path/to/api/queries/root/dir",
+	"SQLRoot":"example/api",
 	"FileServers":{
-		"/assets":"~/path/to/static/content/www/assets",
-		"/lib":"~/path/to/static/content/www/lib"
+		"/assets":"example/www",
+		"/lib":"example/www"
 	},
 	"TemplateServers":{
-		"/":"~/path/to/go/templates"
+		"/":"example/template"
 	},
 	"AppUserAuth":{
 		"ParseFrom":"Header",
@@ -55,8 +55,8 @@ go install
 		"Type":"JWT"
 	},
 	"AppUserLocalParams":{
-		"info":"~/src/github.com/tinkeractive/servotron/example/api/select/app_user/self.sql",
-		"id":"~/src/github.com/tinkeractive/servotron/example/api/select/app_user/id.sql"
+		"info":"example/api/select/app_user/self.sql",
+		"id":"example/api/select/app_user/id.sql"
 	},
 	"ListenPort":"80"
 	"ManagementPort":"9000",
@@ -66,16 +66,17 @@ go install
 	"Debug":true
 }
 ```
-### Root Directories
+### Directories
 File paths specified with tilde will resolve to the user home dir.\
+Can be relative to current dir.\
 This can cause errors when running with `sudo`.
 
 ### App User Auth
-Used to identify user for authorization.\
-Set in the `app_user.auth` parameter and available via `current_setting` function during request. 
+Used to extract identifying info for authorization from request.\
+Value is set in the `app_user.auth` parameter and available via `current_setting` function during request.\
 Can be parsed from Header or Cookie.\
 If ParseFrom is Header, then specify Field and Type (JWT or String). If Type is JWT, then specify Claim. If Claim is not present, then the entire JWT payload is set.\
-If ParseFrom is Cookie, then specify Name. If Name is not present, then all cookies are set as a JSON object of key-value pairs.\
+If ParseFrom is Cookie, then specify Name. If Name is not present, then all cookies are set as a JSON object of key-value pairs.
 
 ### App User Local Params
 Used to set parameters for the duration of the request.\
