@@ -5,7 +5,7 @@
 <p align="center">
 A deliverance -<br/>
 an app server for Postgres<br/>
-without ORM.
+without O/R-M.
 </p>
 <br/>
 
