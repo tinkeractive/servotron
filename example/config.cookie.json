@@ -16,7 +16,7 @@
 	},
 	"ListenPort":"8000",
 	"ManagementPort":"9000",
-	"DBConnString":"postgres://postgres@localhost:5434",
+	"DBConnString":"postgres://servotron@localhost:5434/postgres",
 	"DBPoolSize":12,
 	"Debug":true
 }
