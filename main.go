@@ -112,6 +112,7 @@ type Config struct {
 	SQLRoot            string
 	FileServers        map[string]string
 	TemplateServers    map[string]string
+	QueryStringAsJSON  bool
 	// runtime
 	QueryParams map[string][]string
 	Routes      []Route
@@ -142,6 +143,7 @@ func ParseConfig(b []byte) (Config, error) {
 	c.AppUserAuth["Claim"] = ""
 	c.AppUserAuth["Name"] = ""
 	c.AppUserLocalParams = make(map[string]string)
+	c.QueryStringAsJSON = true
 	err := json.Unmarshal(b, &c)
 	if err != nil {
 		return c, err
@@ -545,17 +547,19 @@ func ExecQuery(tx *pgx.Tx, method string, routeName string, params []interface{}
 func GetAppUserAuth(r *http.Request) (string, error) {
 	result := ""
 	var err error
+	var segments []string
+	var byt []byte
 	if CONFIG.AppUserAuth["ParseFrom"] == "Header" {
 		result = r.Header.Get(CONFIG.AppUserAuth["Field"])
 		if CONFIG.AppUserAuth["Type"] == "JWT" {
 			split := strings.Split(result, " ")
-			segments := strings.Split(split[len(split)-1], ".")
+			segments = strings.Split(split[len(split)-1], ".")
 			if len(segments) != 3 {
 				return result, fmt.Errorf(
 					"invalid JWT format. expected 3 segments, found %i",
 					len(segments))
 			}
-			byt, err := base64.RawURLEncoding.DecodeString(segments[1])
+			byt, err = base64.RawURLEncoding.DecodeString(segments[1])
 			if err != nil {
 				return result, err
 			}
@@ -579,9 +583,35 @@ func GetAppUserAuth(r *http.Request) (string, error) {
 		if CONFIG.AppUserAuth["Name"] == "" {
 			return GetJSONFromCookies(r.Cookies())
 		}
-		userCookie, err = r.Cookie(CONFIG.AppUserAuth["Key"])
-		if err == nil {
-			result = userCookie.Value
+		userCookie, err = r.Cookie(CONFIG.AppUserAuth["Name"])
+		if err != nil {
+			return result, err
+		}
+		result = userCookie.Value
+		if CONFIG.AppUserAuth["Type"] == "JWT" {
+			segments = strings.Split(result, ".")
+			if len(segments) != 3 {
+				return result, fmt.Errorf(
+					"invalid JWT format. expected 3 segments, found %d",
+					len(segments))
+			}
+			byt, err = base64.RawURLEncoding.DecodeString(segments[1])
+			if err != nil {
+				return result, err
+			}
+			if CONFIG.AppUserAuth["Claim"] == "" {
+				return string(byt), err
+			}
+			mapped := make(map[string]interface{})
+			err = json.Unmarshal(byt, &mapped)
+			if err != nil {
+				return result, err
+			}
+			if configClaim, ok := CONFIG.AppUserAuth["Claim"]; ok {
+				if claim, ok := mapped[configClaim]; ok {
+					result = claim.(string)
+				}
+			}
 		}
 	}
 	return result, err
@@ -768,16 +798,32 @@ func ExtractParams(r *http.Request) ([]interface{}, error) {
 		params = append(params, vars[v])
 	}
 	if r.Method == http.MethodGet {
-		routeName := mux.CurrentRoute(r).GetName()
-		query := r.URL.Query()
-		for i, queryParam := range CONFIG.QueryParams[routeName] {
-			// TODO perform regex matching and validation
-			if i%2 == 0 {
-				str := pgtype.Text{String: query.Get(queryParam), Valid: true}
-				if str.String == "" {
-					str.Valid = false
+		if CONFIG.QueryStringAsJSON {
+			queryMap, err := url.ParseQuery(r.URL.RawQuery)
+			if err != nil {
+				return params, err
+			}
+			atomMap := make(map[string]string)
+			for k, v := range queryMap {
+				atomMap[k] = v[0]
+			}
+			j, err := json.Marshal(atomMap)
+			if err != nil {
+				return params, err
+			}
+			params = append(params, string(j))
+		} else {
+			routeName := mux.CurrentRoute(r).GetName()
+			query := r.URL.Query()
+			for i, queryParam := range CONFIG.QueryParams[routeName] {
+				// TODO perform regex matching and validation
+				if i%2 == 0 {
+					str := pgtype.Text{String: query.Get(queryParam), Valid: true}
+					if str.String == "" {
+						str.Valid = false
+					}
+					params = append(params, str)
 				}
-				params = append(params, str)
 			}
 		}
 	}
