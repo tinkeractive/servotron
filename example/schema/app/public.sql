@@ -77,3 +77,4 @@ insert into object(bucket_id, name)
 create user servotron;
 grant all on schema public to servotron;
 grant all on all tables in schema public to servotron;
+grant all on all sequences in schema public to servotron;
