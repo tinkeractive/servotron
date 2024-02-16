@@ -20,5 +20,6 @@
 	"ManagementPort":"9000",
 	"DBConnString":"postgres://postgres@localhost:5432/postgres",
 	"DBPoolSize":12,
-	"Debug":true
+	"Debug":true,
+	"QueryStringAsJSON":false
 }
