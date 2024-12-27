@@ -828,13 +828,16 @@ func ExtractParams(r *http.Request) ([]interface{}, error) {
 		}
 	}
 	if r.Method == http.MethodPost || r.Method == http.MethodPut {
-		arg, err := ioutil.ReadAll(r.Body)
-		r.Body.Close()
-		r.Body = ioutil.NopCloser(bytes.NewBuffer(arg))
-		if err != nil {
-			return params, err
+		contentType := r.Header.Get("Content-Type")
+		if strings.ToLower(contentType) == "application/json" {
+			arg, err := ioutil.ReadAll(r.Body)
+			r.Body.Close()
+			r.Body = ioutil.NopCloser(bytes.NewBuffer(arg))
+			if err != nil {
+				return params, err
+			}
+			params = append(params, string(arg))
 		}
-		params = append(params, string(arg))
 	}
 	return params, err
 }
