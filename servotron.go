@@ -66,10 +66,6 @@ func (s *servotron) LoadRouter(routes []Route) error {
 	return err
 }
 
-func (s *servotron) FormatErr(err string) []byte {
-	return []byte(fmt.Sprintf(`{"error":%q}`, err))
-}
-
 func (s *servotron) LoadRoutesHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("loading routes")
 	bytes, err := ioutil.ReadAll(r.Body)
@@ -174,14 +170,6 @@ func (s *servotron) LoadRoutes(router *mux.Router, routes []Route) error {
 		}
 	}
 	return err
-}
-
-func (s *servotron) TeeError(w http.ResponseWriter, err error) {
-	log.Println(err)
-	w.WriteHeader(http.StatusInternalServerError)
-	if s.config.Debug {
-		w.Write(s.FormatErr(err.Error()))
-	}
 }
 
 func (s *servotron) AuthorizeReq(wrapped func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
@@ -297,7 +285,7 @@ func (s *servotron) QueryHandler(w http.ResponseWriter, r *http.Request) {
 		s.TeeError(w, err)
 		return
 	}
-	result, n, err := s.ExecQuery(&tx, r.Method, routeName, params)
+	result, n, err := s.Query(&tx, r.Method, routeName, params)
 	if err != nil {
 		s.TeeError(w, err)
 		return
@@ -319,7 +307,7 @@ func (s *servotron) QueryHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(result)
 }
 
-func (s *servotron) ExecQuery(tx *pgx.Tx, method string, routeName string, params []interface{}) ([]byte, int64, error) {
+func (s *servotron) Query(tx *pgx.Tx, method string, routeName string, params []interface{}) ([]byte, int64, error) {
 	var result []byte
 	var n int64
 	pathTmpl := ""
@@ -453,7 +441,7 @@ func (s *servotron) ExecHandler(w http.ResponseWriter, r *http.Request) {
 			params = append(params, str)
 		}
 		log.Println("returning", r.Method, routeName, params)
-		result, _, err := s.ExecQuery(&tx, "GET", routeName, params)
+		result, _, err := s.Query(&tx, "GET", routeName, params)
 		if err != nil {
 			s.TeeError(w, err)
 			return
@@ -831,5 +819,17 @@ func (s *servotron) HandleTemplateReq(templateDir string) func(w http.ResponseWr
 			s.TeeError(w, err)
 			return
 		}
+	}
+}
+
+func (s *servotron) FormatErr(err string) []byte {
+	return []byte(fmt.Sprintf(`{"error":%q}`, err))
+}
+
+func (s *servotron) TeeError(w http.ResponseWriter, err error) {
+	log.Println(err)
+	w.WriteHeader(http.StatusInternalServerError)
+	if s.config.Debug {
+		w.Write(s.FormatErr(err.Error()))
 	}
 }

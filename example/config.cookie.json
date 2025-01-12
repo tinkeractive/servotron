@@ -1,18 +1,18 @@
 {
-	"SQLRoot":"example/api",
+	"SQLRoot":"../example/api",
 	"FileServers":{
-		"/assets":"example/www",
-		"/lib":"example/www"
+		"/assets":"../example/www",
+		"/lib":"../example/www"
 	},
 	"TemplateServers":{
-		"/":"example/template"
+		"/":"../example/template"
 	},
 	"AppUserAuth":{
 		"ParseFrom":"Cookie"
 	},
 	"AppUserLocalParams":{
-		"info":"example/api/select/app_user/self.sql",
-		"id":"example/api/select/app_user/id.sql"
+		"info":"../example/api/select/app_user/self.sql",
+		"id":"../example/api/select/app_user/id.sql"
 	},
 	"ListenPort":"8000",
 	"ManagementPort":"9000",
