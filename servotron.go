@@ -28,13 +28,13 @@ import (
 
 type servotron struct {
 	config Config
-	pool *pgxpool.Pool
+	pool   *pgxpool.Pool
 	router *mux.Router
 	server *http.Server
 }
 
 func NewServotron(cfg Config) (servotron, error) {
-	servo := servotron{config:cfg}
+	servo := servotron{config: cfg}
 	pgxpoolConfig, err := pgxpool.ParseConfig(servo.config.DBConnString)
 	if err != nil {
 		return servo, err
@@ -565,10 +565,6 @@ func (s *servotron) TransactionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
-
-
-
 func (s *servotron) ExtractParams(r *http.Request) ([]interface{}, error) {
 	var params []interface{}
 	pathTemplate, err := mux.CurrentRoute(r).GetPathTemplate()
@@ -630,13 +626,6 @@ func (s *servotron) ExtractParams(r *http.Request) ([]interface{}, error) {
 	}
 	return params, err
 }
-
-
-
-
-
-
-
 
 func (s *servotron) GetAppUserAuth(r *http.Request) (string, error) {
 	result := ""

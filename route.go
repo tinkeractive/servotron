@@ -9,5 +9,3 @@ type Route struct {
 	ServiceURL  string
 	Description string
 }
-
-
