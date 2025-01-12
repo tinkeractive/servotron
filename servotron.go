@@ -488,6 +488,10 @@ func (s *servotron) ExecHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonResult)
 }
 
+// TODO refactor directory handling
+// TODO parse each statement from transaction script
+// TODO or get each statement from the ast
+// TODO execute each statement use SendBatch
 func (s *servotron) TransactionHandler(w http.ResponseWriter, r *http.Request) {
 	routeName := mux.CurrentRoute(r).GetName()
 	manifestFilePath := fmt.Sprintf(
@@ -758,6 +762,11 @@ func (s *servotron) SetLocalParams(tx *pgx.Tx, r *http.Request) error {
 	return err
 }
 
+// NOTE for server side includes and rendering of static content based on user info
+// NOTE the template handling is not intended to be a full on backend rendering engine
+// NOTE the only template input is a map of user info
+// NOTE depends on AppUserLocalParams["info"] for user details
+// NOTE multiple template dirs and overlays are possible via template config
 func (s *servotron) HandleTemplateReq(templateDir string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		params, err := s.ExtractParams(r)
