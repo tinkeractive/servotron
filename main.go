@@ -21,8 +21,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// TODO remove global CONFIG
-	// TODO replace with local cfg and propagate servotron config
 	cfg := Config{}
 	err = cfg.Parse(configBytes)
 	if err != nil {
