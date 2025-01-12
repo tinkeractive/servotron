@@ -82,17 +82,6 @@ func main() {
 	}
 	log.Println("listening on management port", CONFIG.ManagementPort)
 	go mgmtServer.ListenAndServe()
-	// dedicated connection for listen/notify
-	// TODO consider removing the listener which consumes a conn
-	// TODO specialized agents can listen for notifications independently
-	dedConn, err := pool.Acquire(context.Background())
-	if err != nil {
-		log.Panic(err)
-	}
-	defer dedConn.Conn().Close(context.Background())
-	channels := CONFIG.DBNotifyChannels
-	log.Println("listening for notifications on", strings.Join(channels, ", "))
-	go ListenForNotifications(dedConn, pool, channels)
 	// server
 	SERVER = &http.Server{Addr: ":" + CONFIG.ListenPort}
 	log.Println("listening on port", CONFIG.ListenPort)
@@ -319,23 +308,6 @@ func CreateServiceFunc(prefix string, wrapped func(http.ResponseWriter, *http.Re
 	return func(w http.ResponseWriter, req *http.Request) {
 		req.URL.Path = strings.TrimPrefix(req.URL.Path, prefix)
 		wrapped(w, req)
-	}
-}
-
-func ListenForNotifications(conn *pgxpool.Conn, pool *pgxpool.Pool, channels []string) {
-	for _, channel := range channels {
-		_, err := conn.Exec(context.Background(), "listen "+channel)
-		if err != nil {
-			log.Panic(err)
-		}
-	}
-	for {
-		note, err := conn.Conn().WaitForNotification(context.Background())
-		if err != nil {
-			log.Println(FormatErr(err.Error()))
-		}
-		log.Println("received notification on", note.Channel, note.Payload)
-		// TODO enqueue notification payload
 	}
 }
 
