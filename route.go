@@ -1,4 +1,4 @@
-package main
+package servotron
 
 // NOTE if route json changes, then the route struct must change
 type Route struct {

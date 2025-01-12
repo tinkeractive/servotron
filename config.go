@@ -1,4 +1,4 @@
-package main
+package servotron
 
 import (
 	"encoding/json"

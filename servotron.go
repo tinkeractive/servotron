@@ -1,4 +1,4 @@
-package main
+package servotron
 
 import (
 	"bufio"
@@ -33,7 +33,7 @@ type servotron struct {
 	server *http.Server
 }
 
-func NewServotron(cfg Config) (servotron, error) {
+func New(cfg Config) (servotron, error) {
 	servo := servotron{config: cfg}
 	pgxpoolConfig, err := pgxpool.ParseConfig(servo.config.DBConnString)
 	if err != nil {
@@ -49,6 +49,10 @@ func NewServotron(cfg Config) (servotron, error) {
 	servo.pool = pool
 	servo.server = &http.Server{Addr: ":" + cfg.ListenPort}
 	return servo, nil
+}
+
+func (s *servotron) ListenAndServe() error {
+	return s.server.ListenAndServe()
 }
 
 func (s *servotron) LoadRouter(routes []Route) error {
