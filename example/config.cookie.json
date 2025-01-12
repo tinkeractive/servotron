@@ -18,6 +18,7 @@
 	"ManagementPort":"9000",
 	"DBConnString":"postgres://servotron@localhost:5432/postgres",
 	"DBPoolSize":12,
+	"DBQueryTimeout":1,
 	"Debug":true,
 	"QueryStringAsJSON":false
 }

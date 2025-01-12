@@ -19,6 +19,7 @@ import (
 	"regexp"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v5"
@@ -324,7 +325,10 @@ func (s *servotron) Query(tx *pgx.Tx, method string, routeName string, params []
 		return result, n, err
 	}
 	log.Println("executing", path, params)
-	rows, err := (*tx).Query(context.Background(), string(q), params...)
+	timeout := time.Duration(s.config.DBQueryTimeout) * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	rows, err := (*tx).Query(ctx, string(q), params...)
 	defer rows.Close()
 	if err != nil {
 		return result, n, err
@@ -377,7 +381,10 @@ func (s *servotron) ExecHandler(w http.ResponseWriter, r *http.Request) {
 		s.TeeError(w, err)
 		return
 	}
-	rows, err := tx.Query(context.Background(), string(q), params...)
+	timeout := time.Duration(s.config.DBQueryTimeout) * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	rows, err := tx.Query(ctx, string(q), params...)
 	defer rows.Close()
 	if err != nil {
 		s.TeeError(w, err)
@@ -534,8 +541,11 @@ func (s *servotron) TransactionHandler(w http.ResponseWriter, r *http.Request) {
 			fileName)
 		path = filepath.Clean(path)
 		q, err := os.ReadFile(path)
+		timeout := time.Duration(s.config.DBQueryTimeout) * time.Second
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
 		_, err = tx.Exec(
-			context.Background(),
+			ctx,
 			string(q),
 			appUserAuth,
 			arg)
@@ -772,7 +782,10 @@ func (s *servotron) HandleTemplateReq(templateDir string) func(w http.ResponseWr
 			s.TeeError(w, err)
 			return
 		}
-		rows, err := tx.Query(context.Background(), string(q), params...)
+		timeout := time.Duration(s.config.DBQueryTimeout) * time.Second
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+		rows, err := tx.Query(ctx, string(q), params...)
 		if err != nil {
 			s.TeeError(w, err)
 			return
