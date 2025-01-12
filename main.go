@@ -95,7 +95,6 @@ type Config struct {
 	ManagementPort     string
 	DBConnString       string
 	DBPoolSize         int
-	DBNotifyChannels   []string
 	AppUserAuth        map[string]string
 	AppUserLocalParams map[string]string
 	SQLRoot            string
@@ -127,7 +126,6 @@ func ParseConfig(b []byte) (Config, error) {
 	c.ListenPort = "80"
 	c.DBConnString = "postgresql://postgres@localhost:5432/postgres"
 	c.DBPoolSize = runtime.NumCPU()
-	c.DBNotifyChannels = []string{"public_default"}
 	c.AppUserAuth = make(map[string]string)
 	c.AppUserAuth["Claim"] = ""
 	c.AppUserAuth["Name"] = ""
@@ -800,13 +798,16 @@ func ExtractParams(r *http.Request) ([]interface{}, error) {
 		}
 	}
 	if r.Method == http.MethodPost || r.Method == http.MethodPut {
-		arg, err := ioutil.ReadAll(r.Body)
-		r.Body.Close()
-		r.Body = ioutil.NopCloser(bytes.NewBuffer(arg))
-		if err != nil {
-			return params, err
+		contentType := r.Header.Get("Content-Type")
+		if strings.ToLower(contentType) == "application/json" {
+			arg, err := ioutil.ReadAll(r.Body)
+			r.Body.Close()
+			r.Body = ioutil.NopCloser(bytes.NewBuffer(arg))
+			if err != nil {
+				return params, err
+			}
+			params = append(params, string(arg))
 		}
-		params = append(params, string(arg))
 	}
 	return params, err
 }
