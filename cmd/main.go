@@ -28,7 +28,7 @@ func main() {
 		log.Fatal(err)
 	}
 	log.Println("config:", cfg.String())
-	servo, err := servotron.New(cfg)
+	servo, err := servotron.NewServer(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}

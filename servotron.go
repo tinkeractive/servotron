@@ -33,7 +33,7 @@ type servotron struct {
 	server *http.Server
 }
 
-func New(cfg Config) (servotron, error) {
+func NewServer(cfg Config) (servotron, error) {
 	servo := servotron{config: cfg}
 	pgxpoolConfig, err := pgxpool.ParseConfig(servo.config.DBConnString)
 	if err != nil {
