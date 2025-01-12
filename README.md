@@ -141,7 +141,7 @@ curl localhost:9000/routes -d @example/routes.json
 curl -b 'email_address=user_a@app.com' localhost:8000/api/buckets
 [{"bucket_id":1,"name":"bucket_a","active":true}]
 
-curl -b 'email_address=user_a@app.com' localhost:8000/api/bucket -XPOST -d '[{"name":"New Bucket"}]'
+curl -H 'Content-type: application/json' -b 'email_address=user_a@app.com' localhost:8000/api/bucket -XPOST -d '[{"name":"New Bucket"}]'
 [{"bucket_id":3,"name":"New Bucket","active":true}]
 
 curl -b 'email_address=user_a@app.com' localhost:8000/api/buckets
@@ -151,7 +151,7 @@ curl -b 'email_address=user_a@app.com' localhost:8000/api/buckets
 curl -b 'email_address=user_a@app.com' localhost:8000/api/bucket/3
 {"bucket_id":3,"name":"New Bucket","active":true}
 
-curl -b 'email_address=user_a@app.com' localhost:8000/api/bucket -XPUT -d '{"bucket_id":3,"name":"Newish Bucket"}'
+curl -H 'Content-type: application/json' -b 'email_address=user_a@app.com' localhost:8000/api/bucket -XPUT -d '{"bucket_id":3,"name":"Newish Bucket"}'
 [{"bucket_id":3,"name":"Newish Bucket","active":true}]
 
 curl -b 'email_address=user_a@app.com' localhost:8000/api/buckets
