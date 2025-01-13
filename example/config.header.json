@@ -16,10 +16,11 @@
 		"info":"../example/api/select/app_user/self.sql",
 		"id":"../example/api/select/app_user/id.sql"
 	},
-	"ListenPort":"8008",
+	"ListenPort":"8000",
 	"ManagementPort":"9000",
 	"DBConnString":"postgres://postgres@localhost:5432/postgres",
 	"DBPoolSize":12,
+	"DBQueryTimeout":1,
 	"Debug":true,
 	"QueryStringAsJSON":false
 }
