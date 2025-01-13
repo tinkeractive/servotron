@@ -1,4 +1,4 @@
-package main
+package servotron
 
 import (
 	"bufio"
@@ -19,6 +19,7 @@ import (
 	"regexp"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v5"
@@ -33,7 +34,7 @@ type servotron struct {
 	server *http.Server
 }
 
-func NewServotron(cfg Config) (servotron, error) {
+func NewServer(cfg Config) (servotron, error) {
 	servo := servotron{config: cfg}
 	pgxpoolConfig, err := pgxpool.ParseConfig(servo.config.DBConnString)
 	if err != nil {
@@ -51,6 +52,10 @@ func NewServotron(cfg Config) (servotron, error) {
 	return servo, nil
 }
 
+func (s *servotron) ListenAndServe() error {
+	return s.server.ListenAndServe()
+}
+
 func (s *servotron) LoadRouter(routes []Route) error {
 	router, err := s.CreateRouter(routes)
 	if err != nil {
@@ -60,10 +65,6 @@ func (s *servotron) LoadRouter(routes []Route) error {
 	s.router = router
 	s.server.Handler = router
 	return err
-}
-
-func (s *servotron) FormatErr(err string) []byte {
-	return []byte(fmt.Sprintf(`{"error":%q}`, err))
 }
 
 func (s *servotron) LoadRoutesHandler(w http.ResponseWriter, r *http.Request) {
@@ -170,14 +171,6 @@ func (s *servotron) LoadRoutes(router *mux.Router, routes []Route) error {
 		}
 	}
 	return err
-}
-
-func (s *servotron) TeeError(w http.ResponseWriter, err error) {
-	log.Println(err)
-	w.WriteHeader(http.StatusInternalServerError)
-	if s.config.Debug {
-		w.Write(s.FormatErr(err.Error()))
-	}
 }
 
 func (s *servotron) AuthorizeReq(wrapped func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
@@ -293,7 +286,7 @@ func (s *servotron) QueryHandler(w http.ResponseWriter, r *http.Request) {
 		s.TeeError(w, err)
 		return
 	}
-	result, n, err := s.ExecQuery(&tx, r.Method, routeName, params)
+	result, n, err := s.Query(&tx, r.Method, routeName, params)
 	if err != nil {
 		s.TeeError(w, err)
 		return
@@ -315,7 +308,7 @@ func (s *servotron) QueryHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(result)
 }
 
-func (s *servotron) ExecQuery(tx *pgx.Tx, method string, routeName string, params []interface{}) ([]byte, int64, error) {
+func (s *servotron) Query(tx *pgx.Tx, method string, routeName string, params []interface{}) ([]byte, int64, error) {
 	var result []byte
 	var n int64
 	pathTmpl := ""
@@ -332,7 +325,10 @@ func (s *servotron) ExecQuery(tx *pgx.Tx, method string, routeName string, param
 		return result, n, err
 	}
 	log.Println("executing", path, params)
-	rows, err := (*tx).Query(context.Background(), string(q), params...)
+	timeout := time.Duration(s.config.DBQueryTimeout) * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	rows, err := (*tx).Query(ctx, string(q), params...)
 	defer rows.Close()
 	if err != nil {
 		return result, n, err
@@ -385,7 +381,10 @@ func (s *servotron) ExecHandler(w http.ResponseWriter, r *http.Request) {
 		s.TeeError(w, err)
 		return
 	}
-	rows, err := tx.Query(context.Background(), string(q), params...)
+	timeout := time.Duration(s.config.DBQueryTimeout) * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	rows, err := tx.Query(ctx, string(q), params...)
 	defer rows.Close()
 	if err != nil {
 		s.TeeError(w, err)
@@ -449,7 +448,7 @@ func (s *servotron) ExecHandler(w http.ResponseWriter, r *http.Request) {
 			params = append(params, str)
 		}
 		log.Println("returning", r.Method, routeName, params)
-		result, _, err := s.ExecQuery(&tx, "GET", routeName, params)
+		result, _, err := s.Query(&tx, "GET", routeName, params)
 		if err != nil {
 			s.TeeError(w, err)
 			return
@@ -542,8 +541,11 @@ func (s *servotron) TransactionHandler(w http.ResponseWriter, r *http.Request) {
 			fileName)
 		path = filepath.Clean(path)
 		q, err := os.ReadFile(path)
+		timeout := time.Duration(s.config.DBQueryTimeout) * time.Second
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
 		_, err = tx.Exec(
-			context.Background(),
+			ctx,
 			string(q),
 			appUserAuth,
 			arg)
@@ -780,7 +782,10 @@ func (s *servotron) HandleTemplateReq(templateDir string) func(w http.ResponseWr
 			s.TeeError(w, err)
 			return
 		}
-		rows, err := tx.Query(context.Background(), string(q), params...)
+		timeout := time.Duration(s.config.DBQueryTimeout) * time.Second
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+		rows, err := tx.Query(ctx, string(q), params...)
 		if err != nil {
 			s.TeeError(w, err)
 			return
@@ -827,5 +832,17 @@ func (s *servotron) HandleTemplateReq(templateDir string) func(w http.ResponseWr
 			s.TeeError(w, err)
 			return
 		}
+	}
+}
+
+func (s *servotron) FormatErr(err string) []byte {
+	return []byte(fmt.Sprintf(`{"error":%q}`, err))
+}
+
+func (s *servotron) TeeError(w http.ResponseWriter, err error) {
+	log.Println(err)
+	w.WriteHeader(http.StatusInternalServerError)
+	if s.config.Debug {
+		w.Write(s.FormatErr(err.Error()))
 	}
 }

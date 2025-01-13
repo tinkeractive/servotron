@@ -1,4 +1,4 @@
-package main
+package servotron
 
 import (
 	"encoding/json"
@@ -16,6 +16,7 @@ type Config struct {
 	ManagementPort     string
 	DBConnString       string
 	DBPoolSize         int
+	DBQueryTimeout int
 	AppUserAuth        map[string]string
 	AppUserLocalParams map[string]string
 	SQLRoot            string
@@ -36,6 +37,7 @@ func (c *Config) Parse(b []byte) error {
 	c.ListenPort = "80"
 	c.DBConnString = "postgresql://postgres@localhost:5432/postgres"
 	c.DBPoolSize = runtime.NumCPU()
+	c.DBQueryTimeout = 60
 	c.AppUserAuth = make(map[string]string)
 	c.AppUserAuth["Claim"] = ""
 	c.AppUserAuth["Name"] = ""

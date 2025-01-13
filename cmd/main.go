@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/tinkeractive/servotron"
 	"github.com/gorilla/mux"
 )
 
@@ -21,36 +22,27 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	cfg := Config{}
+	cfg := servotron.Config{}
 	err = cfg.Parse(configBytes)
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Println("config:", cfg.String())
-	servo, err := NewServotron(cfg)
+	servo, err := servotron.NewServer(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println(
-		"connected to database",
-		servo.pool.Config().ConnConfig.Database,
-		"at host",
-		servo.pool.Config().ConnConfig.Host,
-		"on port",
-		servo.pool.Config().ConnConfig.Port,
-		"as user",
-		servo.pool.Config().ConnConfig.User)
-	log.Println("db pool size:", servo.pool.Config().MinConns)
+	log.Println("connected to database", cfg.DBConnString)
 	// management server listening for admin requests on management port
 	mgmtRouter := mux.NewRouter()
 	mgmtRouter.HandleFunc("/routes", servo.LoadRoutesHandler).Methods("POST")
 	mgmtServer := &http.Server{
 		Handler: mgmtRouter,
-		Addr:    ":" + servo.config.ManagementPort,
+		Addr:    ":" + cfg.ManagementPort,
 	}
-	log.Println("listening on management port", servo.config.ManagementPort)
+	log.Println("listening on management port", cfg.ManagementPort)
 	go mgmtServer.ListenAndServe()
 	// server
-	log.Println("listening on port", servo.config.ListenPort)
-	log.Fatal(servo.server.ListenAndServe())
+	log.Println("listening on port", cfg.ListenPort)
+	log.Fatal(servo.ListenAndServe())
 }
