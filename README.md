@@ -41,29 +41,30 @@ go install
 ## Configuration
 ```json
 {
-	"SQLRoot":"example/api",
-	"FileServers":{
-		"/assets":"example/www",
-		"/lib":"example/www"
-	},
-	"TemplateServers":{
-		"/":"example/template"
-	},
-	"AppUserAuth":{
-		"ParseFrom":"Header",
-		"Field":"Authorization",
-		"Type":"JWT"
-	},
-	"AppUserLocalParams":{
-		"info":"example/api/select/app_user/self.sql",
-		"id":"example/api/select/app_user/id.sql"
-	},
-	"ListenPort":"80"
-	"ManagementPort":"9000",
-	"DBConnString":"postgresql://servotron@localhost:5432/postgres",
-	"DBPoolSize":4,
-	"DBNotifyChannels":["public_default"],
-	"Debug":true
+    "SQLRoot":"../example/api",
+    "FileServers":{
+        "/assets":"../example/www",
+        "/lib":"../example/www"
+    },
+    "TemplateServers":{
+        "/":"../example/template"
+    },
+    "AppUserAuth":{
+        "ParseFrom":"Header",
+        "Field":"Authorization",
+        "Type":"JWT"
+    },
+    "AppUserLocalParams":{
+        "info":"../example/api/select/app_user/self.sql",
+        "id":"../example/api/select/app_user/id.sql"
+    },
+    "ListenPort":"8000",
+    "ManagementPort":"9000",
+    "DBConnString":"postgres://postgres@localhost:5432/postgres",
+    "DBPoolSize":12,
+    "DBQueryTimeout":1,
+    "Debug":true,
+    "QueryStringAsJSON":false
 }
 ```
 ### Directories
@@ -98,11 +99,6 @@ For admin functionality such as route loading.
 
 ### Pool Size
 If not specified, this defaults to the number of CPUs.
-
-### Notify Channels
-Likely to be removed.\
-Intended to enqueue messages.\
-This functionality can be achieved by writing specialized agent listeners.
 
 ### Debug
 If true, server writes error message responses to client.
