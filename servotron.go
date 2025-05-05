@@ -262,6 +262,8 @@ func (s *servotron) IsServiceRequest(r *mux.Route) (bool, error) {
 func (s *servotron) CreateServiceFunc(prefix string, wrapped func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		req.URL.Path = strings.TrimPrefix(req.URL.Path, prefix)
+		req.Host = req.URL.Host
+		log.Printf("proxying request\n%+v\n", req)
 		wrapped(w, req)
 	}
 }
