@@ -6,6 +6,11 @@
 		"Description": "the app user self"
 	},
 	{
+		"Name": "test",
+		"Type": "read",
+		"URLScheme": "/api/test"
+	},
+	{
 		"Name": "bucket",
 		"Type": "create",
 		"URLScheme": "/api/bucket"
