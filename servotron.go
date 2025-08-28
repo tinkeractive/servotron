@@ -185,6 +185,7 @@ func (s *servotron) AuthorizeReq(wrapped func(http.ResponseWriter, *http.Request
 	return func(w http.ResponseWriter, r *http.Request) {
 		currentRoute := mux.CurrentRoute(r)
 		routeName := currentRoute.GetName()
+		apiVersion := r.Header.Get("Version")
 		isServiceReq, err := s.IsServiceRequest(currentRoute)
 		if err != nil {
 			s.TeeError(w, err)
@@ -195,8 +196,9 @@ func (s *servotron) AuthorizeReq(wrapped func(http.ResponseWriter, *http.Request
 			reqType = "service"
 		}
 		authPath := fmt.Sprintf(
-			"%s/auth/%s/%s.sql",
+			"%s/%s/auth/%s/%s.sql",
 			s.config.SQLRoot,
+			apiVersion,
 			reqType,
 			routeName)
 		authPath = filepath.Clean(authPath)
@@ -271,6 +273,7 @@ func (s *servotron) CreateServiceFunc(prefix string, wrapped func(http.ResponseW
 func (s *servotron) QueryHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	routeName := mux.CurrentRoute(r).GetName()
+	apiVersion := r.Header.Get("Version")
 	params, err := s.ExtractParams(r)
 	if err != nil {
 		s.TeeError(w, err)
@@ -288,7 +291,7 @@ func (s *servotron) QueryHandler(w http.ResponseWriter, r *http.Request) {
 		s.TeeError(w, err)
 		return
 	}
-	result, n, err := s.Query(&tx, r.Method, routeName, params)
+	result, n, err := s.Query(&tx, r.Method, apiVersion, routeName, params)
 	if err != nil {
 		s.TeeError(w, err)
 		return
@@ -310,17 +313,17 @@ func (s *servotron) QueryHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(result)
 }
 
-func (s *servotron) Query(tx *pgx.Tx, method string, routeName string, params []interface{}) ([]byte, int64, error) {
+func (s *servotron) Query(tx *pgx.Tx, method string, apiVersion string, routeName string, params []interface{}) ([]byte, int64, error) {
 	var result []byte
 	var n int64
 	pathTmpl := ""
 	switch method {
 	case http.MethodGet:
-		pathTmpl = "%s/select/%s.sql"
+		pathTmpl = "%s/%s/select/%s.sql"
 	default:
 		return result, n, errors.New("invalid http method for query execution")
 	}
-	path := fmt.Sprintf(pathTmpl, s.config.SQLRoot, routeName)
+	path := fmt.Sprintf(pathTmpl, s.config.SQLRoot, apiVersion, routeName)
 	path = filepath.Clean(path)
 	q, err := os.ReadFile(path)
 	if err != nil {
@@ -345,20 +348,21 @@ func (s *servotron) Query(tx *pgx.Tx, method string, routeName string, params []
 func (s *servotron) ExecHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	routeName := mux.CurrentRoute(r).GetName()
+	apiVersion := r.Header.Get("Version")
 	pathTmpl := ""
 	switch r.Method {
 	case http.MethodPost:
-		pathTmpl = "%s/insert/%s.sql"
+		pathTmpl = "%s/%s/insert/%s.sql"
 	case http.MethodPut:
-		pathTmpl = "%s/update/%s.sql"
+		pathTmpl = "%s/%s/update/%s.sql"
 	case http.MethodDelete:
-		pathTmpl = "%s/delete/%s.sql"
+		pathTmpl = "%s/%s/delete/%s.sql"
 	default:
 		log.Println("HTTP Method not recognized.")
 		w.WriteHeader(http.StatusNotImplemented)
 		return
 	}
-	path := fmt.Sprintf(pathTmpl, s.config.SQLRoot, routeName)
+	path := fmt.Sprintf(pathTmpl, s.config.SQLRoot, apiVersion, routeName)
 	path = filepath.Clean(path)
 	q, err := os.ReadFile(path)
 	if err != nil {
@@ -450,7 +454,7 @@ func (s *servotron) ExecHandler(w http.ResponseWriter, r *http.Request) {
 			params = append(params, str)
 		}
 		log.Println("returning", r.Method, routeName, params)
-		result, _, err := s.Query(&tx, "GET", routeName, params)
+		result, _, err := s.Query(&tx, "GET", apiVersion, routeName, params)
 		if err != nil {
 			s.TeeError(w, err)
 			return
@@ -495,9 +499,11 @@ func (s *servotron) ExecHandler(w http.ResponseWriter, r *http.Request) {
 // TODO execute each statement use SendBatch
 func (s *servotron) TransactionHandler(w http.ResponseWriter, r *http.Request) {
 	routeName := mux.CurrentRoute(r).GetName()
+	apiVersion := r.Header.Get("Version")
 	manifestFilePath := fmt.Sprintf(
-		"%s/transaction/%s/manifest.json",
+		"%s/%s/transaction/%s/manifest.json",
 		s.config.SQLRoot,
+		apiVersion,
 		routeName)
 	manifestFh, err := os.Open(manifestFilePath)
 	defer manifestFh.Close()
@@ -537,8 +543,9 @@ func (s *servotron) TransactionHandler(w http.ResponseWriter, r *http.Request) {
 	for scanner.Scan() {
 		fileName := scanner.Text()
 		path := fmt.Sprintf(
-			"%s/transaction/%s/%s",
+			"%s/%s/transaction/%s/%s",
 			s.config.SQLRoot,
+			apiVersion,
 			routeName,
 			fileName)
 		path = filepath.Clean(path)
@@ -736,8 +743,11 @@ func (s *servotron) SetLocalParams(tx *pgx.Tx, r *http.Request) error {
 	// get system user for file path expansion
 	var result string
 	var byt []byte
+	tmpl := "%s/%s/select/%s"
+	apiVersion := r.Header.Get("Version")
 	for k, v := range s.config.AppUserLocalParams {
-		byt, err = os.ReadFile(v)
+		f := fmt.Sprintf(tmpl, s.config.SQLRoot, apiVersion, v)
+		byt, err = os.ReadFile(filepath.Clean(f))
 		if err != nil {
 			return err
 		}
@@ -762,13 +772,20 @@ func (s *servotron) SetLocalParams(tx *pgx.Tx, r *http.Request) error {
 // NOTE multiple template dirs and overlays are possible via template config
 func (s *servotron) HandleTemplateReq(templateDir string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		apiVersion := r.Header.Get("Version")
 		params, err := s.ExtractParams(r)
 		if err != nil {
 			s.TeeError(w, err)
 			return
 		}
 		var result []byte
-		q, err := os.ReadFile(s.config.AppUserLocalParams["info"])
+		tmpl := "%s/%s/select/%s"
+		infoFilePath := fmt.Sprintf(
+			tmpl,
+			s.config.SQLRoot,
+			apiVersion,
+			s.config.AppUserLocalParams["info"])
+		q, err := os.ReadFile(filepath.Clean(infoFilePath))
 		if err != nil {
 			s.TeeError(w, err)
 			return

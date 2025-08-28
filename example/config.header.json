@@ -13,8 +13,8 @@
 		"Type":"JWT"
 	},
 	"AppUserLocalParams":{
-		"info":"../example/api/select/app_user/self.sql",
-		"id":"../example/api/select/app_user/id.sql"
+		"info":"app_user/self.sql",
+		"id":"app_user/id.sql"
 	},
 	"ListenPort":"8000",
 	"ManagementPort":"9000",

@@ -67,12 +67,12 @@ func (c *Config) Parse(b []byte) error {
 			return err
 		}
 	}
-	for key, val := range c.AppUserLocalParams {
-		c.AppUserLocalParams[key], err = c.ResolveUserDir(who.HomeDir, val)
-		if err != nil {
-			return err
-		}
-	}
+// 	for key, val := range c.AppUserLocalParams {
+// 		c.AppUserLocalParams[key], err = c.ResolveUserDir(who.HomeDir, val)
+// 		if err != nil {
+// 			return err
+// 		}
+// 	}
 	return err
 }
 
