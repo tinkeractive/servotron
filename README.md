@@ -55,8 +55,8 @@ go install
         "Type":"JWT"
     },
     "AppUserLocalParams":{
-        "info":"../example/api/select/app_user/self.sql",
-        "id":"../example/api/select/app_user/id.sql"
+        "info":"app_user/self.sql",
+        "id":"app_user/id.sql"
     },
     "ListenPort":"8000",
     "ManagementPort":"9000",
@@ -70,7 +70,8 @@ go install
 ### Directories
 File paths specified with tilde will resolve to the user home dir.\
 Can be relative to current dir.\
-This can cause errors when running with `sudo`.
+This can cause errors when running with `sudo`.\
+App user paths are relative to the select path for the requested version, by default, and cannot be changed.
 
 ### App User Auth
 Used to extract identifying info for authorization from request.\
@@ -134,32 +135,32 @@ curl localhost:9000/routes -d @example/routes.json
 
 ## Request
 ```bash
-curl -b 'email_address=user_a@app.com' localhost:8000/api/buckets
+curl -H 'Version: v1' -b 'email_address=user_a@app.com' localhost:8000/api/buckets
 [{"bucket_id":1,"name":"bucket_a","active":true}]
 
-curl -H 'Content-type: application/json' -b 'email_address=user_a@app.com' localhost:8000/api/bucket -XPOST -d '[{"name":"New Bucket"}]'
+curl -H 'Version: v1' -H 'Content-type: application/json' -b 'email_address=user_a@app.com' localhost:8000/api/bucket -XPOST -d '[{"name":"New Bucket"}]'
 [{"bucket_id":3,"name":"New Bucket","active":true}]
 
-curl -b 'email_address=user_a@app.com' localhost:8000/api/buckets
+curl -H 'Version: v1' -b 'email_address=user_a@app.com' localhost:8000/api/buckets
 [{"bucket_id":1,"name":"bucket_a","active":true},
  {"bucket_id":3,"name":"New Bucket","active":true}]
 
-curl -b 'email_address=user_a@app.com' localhost:8000/api/bucket/3
+curl -H 'Version: v1' -b 'email_address=user_a@app.com' localhost:8000/api/bucket/3
 {"bucket_id":3,"name":"New Bucket","active":true}
 
-curl -H 'Content-type: application/json' -b 'email_address=user_a@app.com' localhost:8000/api/bucket -XPUT -d '{"bucket_id":3,"name":"Newish Bucket"}'
+curl -H 'Version: v1' -H 'Content-type: application/json' -b 'email_address=user_a@app.com' localhost:8000/api/bucket -XPUT -d '{"bucket_id":3,"name":"Newish Bucket"}'
 [{"bucket_id":3,"name":"Newish Bucket","active":true}]
 
-curl -b 'email_address=user_a@app.com' localhost:8000/api/buckets
+curl -H 'Version: v1' -b 'email_address=user_a@app.com' localhost:8000/api/buckets
 [{"bucket_id":1,"name":"bucket_a","active":true},
  {"bucket_id":3,"name":"Newish Bucket","active":true}]
 
-curl -b 'email_address=user_a@app.com' localhost:8000/api/bucket/3 -XDELETE
+curl -H 'Version: v1' -b 'email_address=user_a@app.com' localhost:8000/api/bucket/3 -XDELETE
 
-curl -b 'email_address=user_a@app.com' localhost:8000/api/buckets
+curl -H 'Version: v1' -b 'email_address=user_a@app.com' localhost:8000/api/buckets
 [{"bucket_id":1,"name":"bucket_a","active":true}]
 
-curl -b 'email_address=user_a@app.com' localhost:8000/api/buckets?active=false
+curl -H 'Version: v1' -b 'email_address=user_a@app.com' localhost:8000/api/buckets?active=false
 [{"bucket_id":3,"name":"Newish Bucket","active":false}]
 ```
 
