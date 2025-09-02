@@ -212,7 +212,7 @@ func (s *servotron) AuthorizeReq(wrapped func(http.ResponseWriter, *http.Request
 			s.TeeError(w, err)
 			return
 		}
-		log.Println("authorizing", r.Method, routeName, params)
+		log.Println("AuthorizeReq", "authorizing", r.Method, routeName, params)
 		var isAuthorized bool
 		tx, err := s.pool.Begin(context.Background())
 		if err != nil {
@@ -279,7 +279,7 @@ func (s *servotron) QueryHandler(w http.ResponseWriter, r *http.Request) {
 		s.TeeError(w, err)
 		return
 	}
-	log.Println("processing", r.Method, routeName, params)
+	log.Println("QueryHandler", "processing", r.Method, routeName, params)
 	tx, err := s.pool.Begin(context.Background())
 	if err != nil {
 		s.TeeError(w, err)
@@ -329,7 +329,7 @@ func (s *servotron) Query(tx *pgx.Tx, method string, apiVersion string, routeNam
 	if err != nil {
 		return result, n, err
 	}
-	log.Println("executing", path, params)
+	log.Println("Query", "executing", path, params)
 	timeout := time.Duration(s.config.DBQueryTimeout) * time.Second
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -358,7 +358,7 @@ func (s *servotron) ExecHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodDelete:
 		pathTmpl = "%s/%s/delete/%s.sql"
 	default:
-		log.Println("HTTP Method not recognized.")
+		log.Println("ExecHandler", "HTTP Method not recognized.")
 		w.WriteHeader(http.StatusNotImplemented)
 		return
 	}
@@ -374,8 +374,8 @@ func (s *servotron) ExecHandler(w http.ResponseWriter, r *http.Request) {
 		s.TeeError(w, err)
 		return
 	}
-	log.Println("processing", r.Method, routeName, params)
-	log.Println("executing", path, "with arguments", params)
+	log.Println("ExecHandler", "processing", r.Method, routeName, params)
+	log.Println("ExecHandler", "executing", path, "with arguments", params)
 	tx, err := s.pool.Begin(context.Background())
 	if err != nil {
 		s.TeeError(w, err)
@@ -453,7 +453,7 @@ func (s *servotron) ExecHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			params = append(params, str)
 		}
-		log.Println("returning", r.Method, routeName, params)
+		log.Println("ExecHandler", "returning", r.Method, routeName, params)
 		result, _, err := s.Query(&tx, "GET", apiVersion, routeName, params)
 		if err != nil {
 			s.TeeError(w, err)
@@ -468,7 +468,7 @@ func (s *servotron) ExecHandler(w http.ResponseWriter, r *http.Request) {
 		s.TeeError(w, err)
 		return
 	}
-	log.Println("rows affected:", n)
+	log.Println("ExecHandler", "rows affected:", n)
 	if n == 0 {
 		if r.Method == http.MethodPost {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -508,7 +508,7 @@ func (s *servotron) TransactionHandler(w http.ResponseWriter, r *http.Request) {
 	manifestFh, err := os.Open(manifestFilePath)
 	defer manifestFh.Close()
 	if err != nil {
-		log.Println(err)
+		log.Println("TransactionHandler", err)
 		if s.config.Debug {
 			w.Write(s.FormatErr(err.Error()))
 		}
@@ -518,7 +518,7 @@ func (s *servotron) TransactionHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO use ExtractParams
 	appUserAuth, err := s.GetAppUserAuth(r)
 	if err != nil {
-		log.Println(err)
+		log.Println("TransactionHandler", err)
 		if s.config.Debug {
 			w.Write(s.FormatErr(err.Error()))
 		}
@@ -526,7 +526,7 @@ func (s *servotron) TransactionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	arg, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Println(err)
+		log.Println("TransactionHandler", err)
 		if s.config.Debug {
 			w.Write(s.FormatErr(err.Error()))
 		}
@@ -534,7 +534,7 @@ func (s *servotron) TransactionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	tx, err := s.pool.Begin(context.Background())
 	if err != nil {
-		log.Println(err)
+		log.Println("TransactionHandler", err)
 		if s.config.Debug {
 			w.Write(s.FormatErr(err.Error()))
 		}
@@ -560,7 +560,7 @@ func (s *servotron) TransactionHandler(w http.ResponseWriter, r *http.Request) {
 			arg)
 		if err != nil {
 			_ = tx.Rollback(context.Background())
-			log.Println(err)
+			log.Println("TransactionHandler", err)
 			if s.config.Debug {
 				w.Write(s.FormatErr(err.Error()))
 			}
@@ -569,7 +569,7 @@ func (s *servotron) TransactionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	err = tx.Commit(context.Background())
 	if err != nil {
-		log.Println(err)
+		log.Println("TransactionHandler", err)
 		if s.config.Debug {
 			w.Write(s.FormatErr(err.Error()))
 		}
@@ -755,7 +755,7 @@ func (s *servotron) SetLocalParams(tx *pgx.Tx, r *http.Request) error {
 		if err != nil {
 			return err
 		}
-		log.Println(k, result)
+		log.Println("SetLocalParameters", k, result)
 		q = fmt.Sprintf("select set_config('app_user.%s',$1,true)", k)
 		_, err = (*tx).Exec(context.Background(), q, result)
 		if err != nil {
@@ -818,7 +818,7 @@ func (s *servotron) HandleTemplateReq(templateDir string) func(w http.ResponseWr
 			s.TeeError(w, err)
 			return
 		}
-		log.Println(string(result))
+		log.Println("HandleTemplateRequest", string(result))
 		var appUser map[string]interface{}
 		err = json.Unmarshal(result, &appUser)
 		if err != nil {
@@ -859,7 +859,7 @@ func (s *servotron) FormatErr(err string) []byte {
 }
 
 func (s *servotron) TeeError(w http.ResponseWriter, err error) {
-	log.Println(err)
+	log.Println("TeeError", err)
 	w.WriteHeader(http.StatusInternalServerError)
 	if s.config.Debug {
 		w.Write(s.FormatErr(err.Error()))
